@@ -1,0 +1,3 @@
+[submodule "lib/fortran-yaml"]
+	path = lib/fortran-yaml
+	url = ../fortran-yaml

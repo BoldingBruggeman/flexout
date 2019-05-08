@@ -1,6 +1,6 @@
-#include"cppdefs.h"
-
 module field_manager
+
+   use iso_fortran_env, only: error_unit
 
    implicit none
 
@@ -1060,7 +1060,7 @@ contains
    subroutine fatal_error(location,error)
       character(len=*),intent(in) :: location,error
 
-      FATAL trim(location)//': '//trim(error)
+      write (error_unit,*) trim(location)//': '//trim(error)
       stop 'field_manager::fatal_error'
    end subroutine
 

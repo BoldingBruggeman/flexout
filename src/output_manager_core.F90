@@ -1,6 +1,6 @@
-#include "cppdefs.h"
-
 module output_manager_core
+
+   use iso_fortran_env, only: error_unit
 
    use field_manager
    use yaml_types,only: type_dictionary
@@ -277,7 +277,7 @@ contains
       class (type_host), intent(in) :: self
       character(len=*),  intent(in) :: location,error
 
-      FATAL trim(location)//': '//trim(error)
+      write (error_unit,*) trim(location)//': '//trim(error)
       stop 1
    end subroutine
 
@@ -285,7 +285,7 @@ contains
       class (type_host), intent(in) :: self
       character(len=*),  intent(in) :: message
 
-      LEVEL2 trim(message)
+      write (error_unit,*) trim(message)
    end subroutine
 
    logical function is_dimension_used(self,dim)
