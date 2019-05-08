@@ -45,7 +45,7 @@ if (NOT TARGET yaml)
   endif()
   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml/CMakeLists.txt")
     message(FATAL_ERROR "Fortran-YAML source code not found. Initialize git submodules first (git submodule update --init)")
-  endif)()
+  endif()
   add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/yaml")
 endif()
 
