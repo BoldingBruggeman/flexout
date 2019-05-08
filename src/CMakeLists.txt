@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 
@@ -37,6 +37,9 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
 include_directories(BEFORE "${CMAKE_CURRENT_BINARY_DIR}/modules")
 
 if (NOT TARGET yaml)
+  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml/CMakeLists.txt")
+    message(FATAL_ERROR "Fortran-YAML source code not found. Initialize git submodules first (git submodule update --init)")
+  endif()
   add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/yaml")
 endif()
 
