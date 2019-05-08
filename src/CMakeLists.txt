@@ -44,7 +44,6 @@ if (NOT TARGET yaml)
 endif()
 
 add_library(output_manager
-            ${YAML_SOURCES}
             field_manager.F90
             output_manager.F90
             output_manager_core.F90
