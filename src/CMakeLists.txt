@@ -1,34 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 
+project(output_manager VERSION 0.1.0 LANGUAGES Fortran)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-
-# Create main project.
-project(flexout Fortran)
-
-# Use solution folders in IDEs
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-# Specify default build type for single-build-type systems (not VS)
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set (CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
-
-# Customize compiler flags
-if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Cray")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -N 1023")
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
-  if(WIN32)
-    set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} /Od")
-  endif()
-endif()
-
-# Use use position-independent code (-fPIC) everywhere if building shared libraries
-if(BUILD_SHARED_LIBS)
-  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif()
 
 # Make sure all module files (*.mod) are written to one single "modules" directory.
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
@@ -64,6 +38,14 @@ add_library(output_manager
 source_group(operators REGULAR_EXPRESSION operators)
 source_group(formats REGULAR_EXPRESSION formats)
 target_compile_definitions(output_manager PRIVATE _ONE_=1.d0)
+target_include_directories(output_manager
+    PUBLIC
+#        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/src/modules>
+#        $<BUILD_INTERFACE:${flexout_SOURCE_DIR}/modules>
+#    PRIVAT
+#        ${CMAKE_CURRENT_SOURCE_DIR}/modules
+)
 target_link_libraries(output_manager PRIVATE yaml)
 
 option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
@@ -78,3 +60,12 @@ if(FLEXOUT_USE_NetCDF)
   endif()
 endif(FLEXOUT_USE_NetCDF)
 
+install(TARGETS output_manager 
+        EXPORT output_manager-targets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules 
+#        EXPORT output_manager-targets
+        DESTINATION include)
