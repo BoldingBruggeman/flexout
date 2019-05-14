@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+#KB cmake_minimum_required(VERSION 3.1...3.14)
+
 # Create main project.
 project(flexout VERSION 0.1.0 LANGUAGES Fortran)
 
@@ -12,7 +14,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+# Better set them for each target using target_compile_{definitions,features,options}
 # Customize compiler flags
+#[[---
 if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Cray")
@@ -22,11 +26,15 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
     set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} /Od")
   endif()
 endif()
+---]]
 
 # Use use position-independent code (-fPIC) everywhere if building shared libraries
 if(BUILD_SHARED_LIBS)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
+
+# Make sure all module files (*.mod) are written to one single "modules" directory.
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
 
 add_subdirectory(src)
 add_subdirectory(test)
@@ -44,3 +52,4 @@ install(EXPORT output_manager-targets
   DESTINATION
     cmake
 )
+

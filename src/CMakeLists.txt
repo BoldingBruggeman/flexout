@@ -4,23 +4,18 @@ project(output_manager VERSION 0.1.0 LANGUAGES Fortran)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 
-# Make sure all module files (*.mod) are written to one single "modules" directory.
-set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
-
-# Global include directories
-include_directories(BEFORE "${CMAKE_CURRENT_BINARY_DIR}/modules")
-
 if (NOT TARGET yaml)
-  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml/CMakeLists.txt")
+#KB  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml/CMakeLists.txt")
+  if (NOT EXISTS "${CMAKE_SOURCE_DIR}/extern/fortran-yaml/CMakeLists.txt")
     find_package(Git QUIET)
     if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/../.git")
       execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
   endif()
-  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml/CMakeLists.txt")
+  if (NOT EXISTS "${CMAKE_SOURCE_DIR}/extern/fortran-yaml/CMakeLists.txt")
     message(FATAL_ERROR "Fortran-YAML source code not found. Initialize git submodules first (git submodule update --init)")
   endif()
-  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../lib/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/yaml")
+  add_subdirectory("${CMAKE_SOURCE_DIR}/extern/fortran-yaml" "${CMAKE_BINARY_DIR}/extern/yaml")
 endif()
 
 add_library(output_manager
@@ -37,12 +32,14 @@ add_library(output_manager
             )
 source_group(operators REGULAR_EXPRESSION operators)
 source_group(formats REGULAR_EXPRESSION formats)
+if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+  target_compile_options(output_manager PRIVATE "-ffree-line-length-none")
+endif()
 target_compile_definitions(output_manager PRIVATE _ONE_=1.d0)
 target_include_directories(output_manager
     PUBLIC
-#        $<INSTALL_INTERFACE:include>
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/src/modules>
-#        $<BUILD_INTERFACE:${flexout_SOURCE_DIR}/modules>
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>
 #    PRIVAT
 #        ${CMAKE_CURRENT_SOURCE_DIR}/modules
 )
@@ -66,6 +63,5 @@ install(TARGETS output_manager
         ARCHIVE DESTINATION lib
 )
 
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules 
-#        EXPORT output_manager-targets
+install(DIRECTORY ${CMAKE_BINARY_DIR}/modules/
         DESTINATION include)
