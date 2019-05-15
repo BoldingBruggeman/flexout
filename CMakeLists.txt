@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 
 #KB cmake_minimum_required(VERSION 3.1...3.14)
 
@@ -34,7 +34,7 @@ if(BUILD_SHARED_LIBS)
 endif()
 
 # Make sure all module files (*.mod) are written to one single "modules" directory.
-set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
+#set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
 
 add_subdirectory(src)
 add_subdirectory(test)

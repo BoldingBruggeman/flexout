@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 
 project(output_manager VERSION 0.1.0 LANGUAGES Fortran)
 
@@ -18,7 +18,9 @@ if (NOT TARGET yaml)
   add_subdirectory("${CMAKE_SOURCE_DIR}/extern/fortran-yaml" "${CMAKE_BINARY_DIR}/extern/yaml")
 endif()
 
-add_library(output_manager
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+add_library(output_manager)
+target_sources(output_manager PRIVATE
             field_manager.F90
             output_manager.F90
             output_manager_core.F90
@@ -39,17 +41,18 @@ target_compile_definitions(output_manager PRIVATE _ONE_=1.d0)
 target_include_directories(output_manager
     PUBLIC
         $<INSTALL_INTERFACE:include>
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
 #    PRIVAT
 #        ${CMAKE_CURRENT_SOURCE_DIR}/modules
 )
+target_include_directories(output_manager PUBLIC $<TARGET_PROPERTY:yaml,BINARY_DIR>)
 target_link_libraries(output_manager PRIVATE yaml)
 
 option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
 if(FLEXOUT_USE_NetCDF)
   find_package(NetCDF REQUIRED)
   target_include_directories(output_manager PRIVATE "${NetCDF_INCLUDE_DIRS}")
-  target_link_libraries(output_manager PUBLIC "${NetCDF_LIBRARIES}")
+  target_link_libraries(output_manager INTERFACE "${NetCDF_LIBRARIES}")
   target_compile_definitions(output_manager PRIVATE -DNETCDF_FMT)
   if(NetCDF_STATIC_MSVC_BUILD)
     target_compile_options(output_manager PUBLIC "/libs:static")
@@ -63,5 +66,5 @@ install(TARGETS output_manager
         ARCHIVE DESTINATION lib
 )
 
-install(DIRECTORY ${CMAKE_BINARY_DIR}/modules/
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules/
         DESTINATION include)
