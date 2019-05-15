@@ -1,10 +1,10 @@
 ! -----------------------------------------------------------------------------
-! This file is part of Fortran-YAML: a lightweight YAML parser written in
-! object-oriented Fortran.
+! This file is part of FlexOut: a flexible output manager written in
+! object-oriented Fortran supporting - presently - text and NetCDF formats.
 !
-! Official repository: https://github.com/BoldingBruggeman/fortran-flexout
+! Official repository: https://github.com/BoldingBruggeman/flexout
 !
-! Copyright 2013-2016 Bolding & Bruggeman ApS.
+! Copyright 2019-2019 Bolding & Bruggeman ApS.
 !
 ! This is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU General Public License as published by the Free Software
@@ -16,10 +16,10 @@
 
 program test_flexout
 
+   use yaml_types
+   use yaml
    use output_manager
    use, intrinsic :: iso_fortran_env
-
-#if 0
 
    character(error_length) :: error
    character(256) :: path
@@ -36,7 +36,5 @@ program test_flexout
       stop 1
    end if
    call root%dump(unit=output_unit,indent=0)
-
-#endif
 
 end program
