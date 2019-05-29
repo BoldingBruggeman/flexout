@@ -36,6 +36,7 @@ add_library(output_manager
 source_group(operators REGULAR_EXPRESSION operators)
 source_group(formats REGULAR_EXPRESSION formats)
 if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+  target_compile_options(field_manager PRIVATE "-ffree-line-length-none")
   target_compile_options(output_manager PRIVATE "-ffree-line-length-none")
 endif()
 target_compile_definitions(output_manager PRIVATE _ONE_=1.d0)
