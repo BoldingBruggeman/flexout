@@ -1,6 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
-
-#KB cmake_minimum_required(VERSION 3.1...3.14)
+cmake_minimum_required(VERSION 3.0)
 
 # Create main project.
 project(flexout VERSION 0.1.0 LANGUAGES Fortran)
