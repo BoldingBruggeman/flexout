@@ -46,6 +46,11 @@ target_include_directories(output_manager
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
 )
+target_include_directories(field_manager
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+)
 target_link_libraries(output_manager PRIVATE field_manager yaml)
 
 option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
