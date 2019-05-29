@@ -17,8 +17,12 @@ if (NOT TARGET yaml)
   add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../extern/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/extern/yaml")
 endif()
 
+add_library(field_manager
+    field_manager.F90
+)
+target_compile_definitions(field_manager PRIVATE _ONE_=1.d0)
+
 add_library(output_manager
-            field_manager.F90
             output_manager.F90
             output_manager_core.F90
             formats/netcdf_output.F90
@@ -35,13 +39,13 @@ if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   target_compile_options(output_manager PRIVATE "-ffree-line-length-none")
 endif()
 target_compile_definitions(output_manager PRIVATE _ONE_=1.d0)
-set_property(TARGET output_manager PROPERTY Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+set_property(TARGET field_manager output_manager PROPERTY Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
 target_include_directories(output_manager
     PUBLIC
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
 )
-target_link_libraries(output_manager PRIVATE yaml)
+target_link_libraries(output_manager PRIVATE field_manager yaml)
 
 option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
 if(FLEXOUT_USE_NetCDF)
@@ -55,7 +59,7 @@ if(FLEXOUT_USE_NetCDF)
   endif()
 endif(FLEXOUT_USE_NetCDF)
 
-install(TARGETS output_manager 
+install(TARGETS field_manager output_manager 
         EXPORT output_manager-targets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
