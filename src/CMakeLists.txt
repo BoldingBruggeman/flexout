@@ -2,22 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 
 project(output_manager VERSION 0.1.0 LANGUAGES Fortran)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-
-if (NOT TARGET yaml)
-  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../extern/fortran-yaml/CMakeLists.txt")
-    find_package(Git QUIET)
-    if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/../.git")
-      execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    endif()
-  endif()
-  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../extern/fortran-yaml/CMakeLists.txt")
-    message(FATAL_ERROR "Fortran-YAML source code not found. Initialize git submodules first (git submodule update --init)")
-  endif()
-  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../extern/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/extern/yaml")
-  set_property(TARGET yaml PROPERTY FOLDER flexout)
-endif()
-
 if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   add_compile_options("-ffree-line-length-none")
 endif()
@@ -56,7 +40,6 @@ target_link_libraries(output_manager PRIVATE field_manager yaml)
 
 set_property(TARGET output_manager field_manager PROPERTY FOLDER flexout)
 
-option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
 if(FLEXOUT_USE_NetCDF)
   target_link_libraries(output_manager PUBLIC netcdf)
   target_compile_definitions(output_manager PRIVATE -DNETCDF_FMT)

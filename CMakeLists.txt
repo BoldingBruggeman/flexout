@@ -12,6 +12,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
+
 # Better set them for each target using target_compile_{definitions,features,options}
 # Customize compiler flags
 #[[---
@@ -43,6 +45,14 @@ if(FLEXOUT_USE_NetCDF)
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY COMPILE_OPTIONS /libs:static)
     set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_LIBRARIES $<$<CONFIG:DEBUG>:-NODEFAULTLIB:libcmt>)
   endif()
+endif()
+
+if (NOT TARGET yaml)
+  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/fortran-yaml/CMakeLists.txt")
+    message(FATAL_ERROR "Fortran-YAML not found at extern/fortran-yaml. Please retrieve this submodule first by running \"git submodule update --init\" within your flexout source directory.")
+  endif()
+  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/extern/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/extern/yaml" EXCLUDE_FROM_ALL)
+  set_property(TARGET yaml PROPERTY FOLDER flexout)
 endif()
 
 add_subdirectory(src)
