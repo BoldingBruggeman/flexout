@@ -31,8 +31,19 @@ if(BUILD_SHARED_LIBS)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-# Make sure all module files (*.mod) are written to one single "modules" directory.
-#set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
+option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
+
+if(FLEXOUT_USE_NetCDF)
+  find_package(NetCDF REQUIRED)
+  add_library(netcdf INTERFACE IMPORTED)
+  set_property(TARGET netcdf APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${NetCDF_INCLUDE_DIRS}")
+  set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${NetCDF_LIBRARIES}")
+  if(NetCDF_STATIC_MSVC_BUILD)
+    set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY COMPILE_OPTIONS /libs:static)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY COMPILE_OPTIONS /libs:static)
+    set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_LIBRARIES $<$<CONFIG:DEBUG>:-NODEFAULTLIB:libcmt>)
+  endif()
+endif()
 
 add_subdirectory(src)
 add_subdirectory(test)
