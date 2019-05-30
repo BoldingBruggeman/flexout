@@ -63,8 +63,8 @@ if(FLEXOUT_USE_NetCDF)
   target_include_directories(netcdf INTERFACE "${NetCDF_INCLUDE_DIRS}")
   target_link_libraries(netcdf INTERFACE "${NetCDF_LIBRARIES}")
   if(NetCDF_STATIC_MSVC_BUILD)
-    # NB instead of set_property below we could use target_link_options, but that is only supported by cmake >= 3.13
-    target_compile_options(netcdf INTERFACE /libs:static)
+    # NB older cmake versions allow imported libraries to be configured with set_property only
+    set_property(TARGET netcdf APPEND PROPERTY INTERFACE_COMPILE_OPTIONS /libs:static)
     set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_OPTIONS $<$<CONFIG:DEBUG>:/NODEFAULTLIB:libcmt>)
   endif()
 
