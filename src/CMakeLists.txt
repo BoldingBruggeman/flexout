@@ -15,12 +15,18 @@ if (NOT TARGET yaml)
     message(FATAL_ERROR "Fortran-YAML source code not found. Initialize git submodules first (git submodule update --init)")
   endif()
   add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../extern/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/extern/yaml")
+  set_property(TARGET yaml PROPERTY FOLDER flexout)
 endif()
+
+if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+  add_compile_options("-ffree-line-length-none")
+endif()
+
+add_definitions(-D_ONE_=1.d0)
 
 add_library(field_manager
     field_manager.F90
 )
-target_compile_definitions(field_manager PRIVATE _ONE_=1.d0)
 
 add_library(output_manager
             output_manager.F90
@@ -35,11 +41,6 @@ add_library(output_manager
             )
 source_group(operators REGULAR_EXPRESSION operators)
 source_group(formats REGULAR_EXPRESSION formats)
-if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
-  target_compile_options(field_manager PRIVATE "-ffree-line-length-none")
-  target_compile_options(output_manager PRIVATE "-ffree-line-length-none")
-endif()
-target_compile_definitions(output_manager PRIVATE _ONE_=1.d0)
 set_property(TARGET field_manager output_manager PROPERTY Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
 target_include_directories(output_manager
     PUBLIC
@@ -52,6 +53,8 @@ target_include_directories(field_manager
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
 )
 target_link_libraries(output_manager PRIVATE field_manager yaml)
+
+set_property(TARGET output_manager field_manager PROPERTY FOLDER flexout)
 
 option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
 if(FLEXOUT_USE_NetCDF)
