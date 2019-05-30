@@ -65,7 +65,7 @@ if(FLEXOUT_USE_NetCDF)
   if(NetCDF_STATIC_MSVC_BUILD)
     # NB older cmake versions allow imported libraries to be configured with set_property only
     set_property(TARGET netcdf APPEND PROPERTY INTERFACE_COMPILE_OPTIONS /libs:static)
-    set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_OPTIONS $<$<CONFIG:DEBUG>:/NODEFAULTLIB:libcmt>)
+    set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_LIBRARIES $<$<CONFIG:DEBUG>:-NODEFAULTLIB:libcmt>)
   endif()
 
   target_link_libraries(output_manager PUBLIC netcdf)
