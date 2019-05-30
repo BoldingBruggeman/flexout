@@ -59,13 +59,17 @@ set_property(TARGET output_manager field_manager PROPERTY FOLDER flexout)
 option(FLEXOUT_USE_NetCDF "Enable output in NetCDF format" ON)
 if(FLEXOUT_USE_NetCDF)
   find_package(NetCDF REQUIRED)
-  target_include_directories(output_manager PUBLIC "${NetCDF_INCLUDE_DIRS}")
-  target_link_libraries(output_manager PUBLIC "${NetCDF_LIBRARIES}")
-  target_compile_definitions(output_manager PRIVATE -DNETCDF_FMT)
+  add_library(netcdf INTERFACE IMPORTED)
+  target_include_directories(netcdf INTERFACE "${NetCDF_INCLUDE_DIRS}")
+  target_link_libraries(netcdf INTERFACE "${NetCDF_LIBRARIES}")
   if(NetCDF_STATIC_MSVC_BUILD)
-    target_compile_options(output_manager PUBLIC "/libs:static")
-    target_link_libraries(output_manager PUBLIC debug "/NODEFAULTLIB:\"libcmt\"")
+    # NB instead of set_property below we could use target_link_options, but that is only supported by cmake >= 3.13
+    target_compile_options(netcdf INTERFACE /libs:static)
+    set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_OPTIONS $<$<CONFIG:DEBUG>:/NODEFAULTLIB:libcmt>)
   endif()
+
+  target_link_libraries(output_manager PUBLIC netcdf)
+  target_compile_definitions(output_manager PRIVATE -DNETCDF_FMT)
 endif(FLEXOUT_USE_NetCDF)
 
 install(TARGETS field_manager output_manager 
