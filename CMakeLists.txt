@@ -58,17 +58,6 @@ endif()
 add_subdirectory(src)
 add_subdirectory(test)
 
-install(EXPORT yaml-targets
-  FILE
-    yamlTargets.cmake
-  DESTINATION
-    cmake
-)
-
-install(EXPORT output_manager-targets
-  FILE
-    output_managerTargets.cmake
-  DESTINATION
-    cmake
-)
+install(EXPORT yamlConfig DESTINATION cmake)
+install(EXPORT output_managerConfig DESTINATION cmake)
 
