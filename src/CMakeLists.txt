@@ -46,7 +46,7 @@ if(FLEXOUT_USE_NetCDF)
 endif(FLEXOUT_USE_NetCDF)
 
 install(TARGETS field_manager output_manager 
-        EXPORT output_managerConfig
+        EXPORT flexoutConfig
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
 )

@@ -58,5 +58,5 @@ endif()
 add_subdirectory(src)
 add_subdirectory(test)
 
-install(EXPORT output_managerConfig DESTINATION cmake)
+install(EXPORT flexoutConfig DESTINATION cmake)
 
