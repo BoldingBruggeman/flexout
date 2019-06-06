@@ -51,7 +51,7 @@ if (NOT TARGET yaml)
   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/fortran-yaml/CMakeLists.txt")
     message(FATAL_ERROR "Fortran-YAML not found at extern/fortran-yaml. Please retrieve this submodule first by running \"git submodule update --init\" within your flexout source directory.")
   endif()
-  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/extern/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/extern/yaml" EXCLUDE_FROM_ALL)
+  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/extern/fortran-yaml" "${CMAKE_CURRENT_BINARY_DIR}/extern/yaml")
   set_property(TARGET yaml PROPERTY FOLDER flexout)
 endif()
 

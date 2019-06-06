@@ -51,5 +51,5 @@ install(TARGETS field_manager output_manager
         ARCHIVE DESTINATION lib
 )
 
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules/
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules/\${BUILD_TYPE}/
         DESTINATION include)
