@@ -58,6 +58,5 @@ endif()
 add_subdirectory(src)
 add_subdirectory(test)
 
-install(EXPORT yamlConfig DESTINATION cmake)
 install(EXPORT output_managerConfig DESTINATION cmake)
 
