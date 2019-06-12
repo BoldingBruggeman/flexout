@@ -41,7 +41,7 @@ target_link_libraries(output_manager PRIVATE field_manager yaml)
 set_property(TARGET output_manager field_manager PROPERTY FOLDER flexout)
 
 if(FLEXOUT_USE_NetCDF)
-  target_link_libraries(output_manager PUBLIC netcdf)
+  target_link_libraries(output_manager PUBLIC NetCDF)
   target_compile_definitions(output_manager PRIVATE -DNETCDF_FMT)
 endif(FLEXOUT_USE_NetCDF)
 
