@@ -125,6 +125,10 @@ module field_manager
    contains
       procedure :: has_dimension => field_has_dimension
       procedure :: finalize      => field_finalize
+
+      ! For backward compatibility - direct access to "attributes" now possible
+      procedure :: field_set_real_attribute
+      generic :: set_attribute => field_set_real_attribute
    end type type_field
 
    type,abstract :: type_node
@@ -1116,5 +1120,12 @@ contains
       end do
       hash = sum(ichar(tmp))
    end function
+
+   subroutine field_set_real_attribute(self,name,value)
+      class (type_field),intent(inout) :: self
+      character(len=*),  intent(in)    :: name
+      real(rk),          intent(in)    :: value
+      call self%attributes%set(name, value)
+   end subroutine field_set_real_attribute
 
 end module field_manager
