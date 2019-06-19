@@ -116,7 +116,18 @@ contains
       type (type_dimension_pointer), allocatable, intent(out), optional :: dimensions(:)
       real(rk), intent(out), optional :: minimum, maximum, fill_value
       type (type_attributes), intent(out), optional :: attributes
-      call self%type_universal_operator_result%get_metadata(long_name, units, dimensions, minimum, maximum, fill_value, standard_name, path, attributes)
+
+      ! Workaround for gfortran BUG 88511 - passing optional allocatable deferred length character arguments to the next routine causes memory corruption
+      character(len=:), allocatable :: long_name2, units2, standard_name2, path2
+
+      call self%type_universal_operator_result%get_metadata(long_name2, units2, dimensions, minimum, maximum, fill_value, standard_name2, path2, attributes)
+
+      ! Workaround for gfortran
+      if (present(long_name)) long_name = long_name2
+      if (present(units)) units = units2
+      if (present(standard_name)) standard_name = standard_name2
+      if (present(path)) path = path2
+
       if (present(attributes)) then
          select case (self%method)
          case (time_method_mean)

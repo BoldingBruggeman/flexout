@@ -196,7 +196,7 @@ contains
       real(rk), intent(out), optional :: minimum, maximum, fill_value
 
       if (self%source%status == status_not_registered) then
-         call self%type_base_output_field%get_metadata(long_name, units, dimensions, minimum, maximum, fill_value, standard_name, path, attributes)
+         if (present(dimensions)) allocate(dimensions(0))
          return
       end if
       if (present(long_name)) long_name = trim(self%source%long_name)
