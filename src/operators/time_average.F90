@@ -112,7 +112,7 @@ contains
 
    recursive subroutine get_metadata(self, long_name, units, dimensions, minimum, maximum, fill_value, standard_name, path, attributes)
       class (type_result), intent(in) :: self
-      character(len=:), allocatable, optional :: long_name, units, standard_name, path
+      character(len=:), allocatable, intent(out), optional :: long_name, units, standard_name, path
       type (type_dimension_pointer), allocatable, intent(out), optional :: dimensions(:)
       real(rk), intent(out), optional :: minimum, maximum, fill_value
       type (type_attributes), intent(out), optional :: attributes
