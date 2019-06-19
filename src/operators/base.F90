@@ -57,10 +57,10 @@ module output_operators_base
       call self%source%get_metadata(long_name2, units2, dimensions, minimum, maximum, fill_value, standard_name2, path2, attributes)
 
       ! Workaround for gfortran
-      if (present(long_name)) long_name = long_name2
-      if (present(units)) units = units2
-      if (present(standard_name)) standard_name = standard_name2
-      if (present(path)) path = path2
+      if (present(long_name) .and. allocated(long_name2)) long_name = long_name2
+      if (present(units) .and. allocated(units2)) units = units2
+      if (present(standard_name) .and. allocated(standard_name2)) standard_name = standard_name2
+      if (present(path) .and. allocated(path2)) path = path2
 
       if (present(dimensions) .and. allocated(self%dimensions)) dimensions(:) = self%dimensions(:)
    end subroutine
