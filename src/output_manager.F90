@@ -13,7 +13,7 @@ module output_manager
 
    implicit none
 
-   public output_manager_init, output_manager_prepare_save, output_manager_save, output_manager_clean, output_manager_add_file
+   public output_manager_init, output_manager_start, output_manager_prepare_save, output_manager_save, output_manager_clean, output_manager_add_file
 
    private
 
@@ -175,7 +175,7 @@ contains
 
    end subroutine populate
 
-   subroutine initialize_files(julianday,secondsofday,microseconds,n)
+   subroutine output_manager_start(julianday,secondsofday,microseconds,n)
       integer, intent(in) :: julianday,secondsofday,microseconds,n
 
       class (type_file), pointer :: file
@@ -198,6 +198,55 @@ contains
       files_initialized = .true.
    end subroutine
 
+   subroutine set_next_output(self, julianday, secondsofday, microseconds, n)
+      class (type_file), intent(inout) :: self
+      integer,           intent(in)    :: julianday, secondsofday, microseconds, n
+
+      integer                             :: yyyy,mm,dd,yyyy0,mm0
+      integer(kind=selected_int_kind(12)) :: offset
+
+      ! Determine time (julian day, seconds of day) for first output.
+      self%next_julian = self%first_julian
+      self%next_seconds = self%first_seconds
+      offset = 86400*(julianday-self%first_julian) + (secondsofday-self%first_seconds)
+      if (offset .gt. 0) then
+         select case (self%time_unit)
+            case (time_unit_second)
+               self%next_seconds = self%next_seconds + ((offset+self%time_step-1)/self%time_step)*self%time_step
+               self%next_julian = self%next_julian + self%next_seconds/86400
+               self%next_seconds = mod(self%next_seconds,86400)
+            case (time_unit_hour)
+               self%next_seconds = self%next_seconds + ((offset+self%time_step*3600-1)/(self%time_step*3600))*self%time_step*3600
+               self%next_julian = self%next_julian + self%next_seconds/86400
+               self%next_seconds = mod(self%next_seconds,86400)
+            case (time_unit_day)
+               self%next_julian = self%next_julian + ((offset+self%time_step*86400-1)/(self%time_step*86400))*self%time_step
+            case (time_unit_month)
+               call host%calendar_date(julianday,yyyy,mm,dd)
+               call host%calendar_date(self%first_julian,yyyy,mm0,dd)
+               mm = mm0 + ((mm-mm0+self%time_step-1)/self%time_step)*self%time_step
+               yyyy = yyyy + (mm-1)/12
+               mm = mod(mm-1,12)+1
+               call host%julian_day(yyyy,mm,dd,self%next_julian)
+               if (self%next_julian.eq.julianday .and. secondsofday.gt.self%next_seconds) then
+                  mm = mm + self%time_step
+                  yyyy = yyyy + (mm-1)/12
+                  mm = mod(mm-1,12)+1
+                  call host%julian_day(yyyy,mm,dd,self%next_julian)
+               end if
+            case (time_unit_year)
+               call host%calendar_date(julianday,yyyy,mm,dd)
+               call host%calendar_date(self%first_julian,yyyy0,mm,dd)
+               yyyy = yyyy0 + ((yyyy-yyyy0+self%time_step-1)/self%time_step)*self%time_step
+               call host%julian_day(yyyy,mm,dd,self%next_julian)
+               if (self%next_julian.eq.julianday .and. secondsofday.gt.self%next_seconds) then
+                  yyyy = yyyy + self%time_step
+                  call host%julian_day(yyyy,mm,dd,self%next_julian)
+               end if
+         end select
+      end if
+   end subroutine
+
    subroutine output_manager_save1(julianday,secondsofday,n)
       integer,intent(in) :: julianday,secondsofday,n
       call output_manager_save2(julianday,secondsofday,0,n)
@@ -210,7 +259,7 @@ contains
       class (type_base_output_field), pointer :: output_field
       logical                                 :: required
 
-      if (.not. files_initialized) call initialize_files(julianday, secondsofday, microseconds, n)
+      if (.not. files_initialized) call output_manager_start(julianday, secondsofday, microseconds, n)
 
       ! Start by marking all fields as not needing computation
       if (associated(first_file)) call first_file%field_manager%reset_used()
@@ -218,6 +267,7 @@ contains
       file => first_file
       do while (associated(file))
          if (in_window(file, julianday, secondsofday, microseconds, n)) then
+            if (file%next_julian == -1) call set_next_output(file, julianday, secondsofday, microseconds, n)
             output_field => file%first_field
             do while (associated(output_field))
                select case (file%time_unit)
@@ -250,39 +300,34 @@ contains
       integer                                 :: yyyy,mm,dd
       logical                                 :: output_required
 
-      if (.not.files_initialized) call initialize_files(julianday,secondsofday,microseconds,n)
+      if (.not.files_initialized) call output_manager_start(julianday,secondsofday,microseconds,n)
 
       file => first_file
       do while (associated(file))
          if (in_window(file, julianday, secondsofday, microseconds, n)) then
+            if (file%next_julian == -1) call set_next_output(file, julianday, secondsofday, microseconds, n)
 
-         ! Increment time-integrated fields
-         output_field => file%first_field
-         do while (associated(output_field))
-            call output_field%new_data()
-            output_field => output_field%next
-         end do
-
-         if (file%next_julian==-1) then
-            ! Store current time step so next time step can be computed correctly.
-            file%next_julian = file%first_julian
-            file%next_seconds = file%first_seconds
-         end if
-
-         ! Determine whether output is required
-         if (file%time_unit /= time_unit_dt) then
-            output_required  = (julianday == file%next_julian .and. secondsofday >= file%next_seconds) .or. julianday > file%next_julian
-         else
-            if (file%first_index == -1) file%first_index = n
-            output_required = mod(n - file%first_index, file%time_step) == 0
-         end if
-
-         if (output_required) then
+            ! Increment time-integrated fields
             output_field => file%first_field
             do while (associated(output_field))
-               call output_field%before_save()
+               call output_field%new_data()
                output_field => output_field%next
             end do
+
+            ! Determine whether output is required
+            if (file%time_unit /= time_unit_dt) then
+               output_required  = (julianday == file%next_julian .and. secondsofday >= file%next_seconds) .or. julianday > file%next_julian
+            else
+               if (file%first_index == -1) file%first_index = n
+               output_required = mod(n - file%first_index, file%time_step) == 0
+            end if
+
+            if (output_required) then
+               output_field => file%first_field
+               do while (associated(output_field))
+                  call output_field%before_save()
+                  output_field => output_field%next
+               end do
 
             ! Do output
             call file%save(julianday,secondsofday,microseconds)
