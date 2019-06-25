@@ -108,6 +108,7 @@ contains
                coordinate_field => output_field%get_field(dimensions(i)%p%coordinate)
                if (associated(coordinate_field)) call append_field(trim(dimensions(i)%p%coordinate%name), coordinate_field, file%create_settings())
             end if
+            if (associated(coordinate_field)) coordinate_field%is_coordinate = .true.
             output_field%coordinates(i)%p => coordinate_field
          end do
          output_field => output_field%next

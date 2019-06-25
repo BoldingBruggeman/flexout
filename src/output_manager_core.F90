@@ -80,10 +80,11 @@ module output_manager_core
 
    type type_base_output_field
       class (type_output_variable_settings), pointer :: settings => null()
-      character(len=string_length) :: output_name = ''
-      type (type_nd_data_pointer) :: data
-      type (type_output_field_pointer), allocatable :: coordinates(:)
-      class (type_base_output_field), pointer :: next => null()
+      character(len=string_length)                   :: output_name = ''
+      logical                                        :: is_coordinate = .false.
+      type (type_nd_data_pointer)                    :: data
+      type (type_output_field_pointer), allocatable  :: coordinates(:)
+      class (type_base_output_field),        pointer :: next => null()
    contains
       procedure :: new_data         => base_field_new_data
       procedure :: before_save      => base_field_before_save

@@ -10,6 +10,9 @@ module netcdf_output
    public type_netcdf_file, NF90_FLOAT, NF90_DOUBLE
    public type_netcdf_variable_settings
 
+   integer, save, public :: default_xtype = NF90_FLOAT
+   integer, save, public :: default_coordinate_xtype = NF90_FLOAT
+
    private
 
    type,extends(type_file) :: type_netcdf_file
@@ -32,7 +35,7 @@ module netcdf_output
       integer,allocatable :: start(:)
       integer,allocatable :: edges(:)
       integer :: itimedim = -1
-      integer :: xtype = NF90_FLOAT
+      integer :: xtype = -1
    contains
       procedure :: initialize => netcdf_variable_settings_initialize
    end type
@@ -133,6 +136,15 @@ contains
             do i=1,size(dimensions)
                current_dim_ids(i) = get_dim_id(dimensions(i)%p)
             end do
+
+            if (settings%xtype == -1) then
+               if (output_field%is_coordinate) then
+                  settings%xtype = default_coordinate_xtype
+               else
+                  settings%xtype = default_xtype
+               end if
+            end if
+
             iret = nf90_def_var(self%ncid, trim(output_field%output_name), settings%xtype, current_dim_ids, settings%varid); call check_err(iret)
             deallocate(current_dim_ids)
 
