@@ -766,8 +766,8 @@ contains
 
       class (type_attribute),pointer :: attribute, next_attribute
 
-      deallocate(self%dimensions)
-      deallocate(self%extents)
+      if (allocated(self%dimensions)) deallocate(self%dimensions)
+      if (allocated(self%extents)) deallocate(self%extents)
 
       attribute => self%attributes%first
       do while (associated(attribute))

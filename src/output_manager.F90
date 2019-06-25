@@ -19,6 +19,7 @@ module output_manager
 
    class (type_file),pointer :: first_file
    logical                   :: files_initialized
+   logical, save, public     :: allow_missing_fields = .false.
 
    interface output_manager_save
       module procedure output_manager_save1
@@ -74,20 +75,23 @@ contains
       do while (associated(item))
          if (associated(item%category)) then
             call host%log_message('Processing output category /'//trim(item%name)//':')
-            if (.not.item%category%has_fields()) call host%fatal_error('collect_from_categories','No variables have been registered under output category "'//trim(item%name)//'".')
-            call item%category%get_all_fields(set, item%output_level)
-            member => set%first
-            if (.not.associated(member)) call host%log_message('WARNING: output category "'//trim(item%name)//'" does not contain any variables with requested output level.')
-            do while (associated(member))
-               call host%log_message('  - '//trim(member%field%name))
-               settings => file%create_settings()
-               call settings%initialize(mapping, item%settings)
-               call create_field(settings, member%field, trim(item%prefix) // trim(member%field%name) // trim(item%postfix), .true.)
-               next_member => member%next
-               deallocate(member)
-               member => next_member
-            end do
-            set%first => null()
+            if (item%category%has_fields() .or. allow_missing_fields) then
+               call item%category%get_all_fields(set, item%output_level)
+               member => set%first
+               if (.not.associated(member)) call host%log_message('WARNING: output category "'//trim(item%name)//'" does not contain any variables with requested output level.')
+               do while (associated(member))
+                  call host%log_message('  - '//trim(member%field%name))
+                  settings => file%create_settings()
+                  call settings%initialize(mapping, item%settings)
+                  call create_field(settings, member%field, trim(item%prefix) // trim(member%field%name) // trim(item%postfix), .true.)
+                  next_member => member%next
+                  deallocate(member)
+                  member => next_member
+               end do
+               set%first => null()
+            else
+               call host%fatal_error('collect_from_categories','No variables have been registered under output category "'//trim(item%name)//'".')
+            end if
          end if
          item => item%next
       end do
@@ -146,7 +150,7 @@ contains
             final_operator => time_filter
          end if
 
-         output_field => wrap_field(field)
+         output_field => wrap_field(field, allow_missing_fields)
 
          if (associated(final_operator)) output_field => final_operator%apply_all(output_field)
          if (associated(output_field)) call append_field(output_name, output_field, settings)
@@ -209,7 +213,7 @@ contains
       self%next_julian = self%first_julian
       self%next_seconds = self%first_seconds
       offset = 86400*(julianday-self%first_julian) + (secondsofday-self%first_seconds)
-      if (offset .gt. 0) then
+      if (offset > 0) then
          select case (self%time_unit)
             case (time_unit_second)
                self%next_seconds = self%next_seconds + ((offset+self%time_step-1)/self%time_step)*self%time_step
@@ -228,7 +232,7 @@ contains
                yyyy = yyyy + (mm-1)/12
                mm = mod(mm-1,12)+1
                call host%julian_day(yyyy,mm,dd,self%next_julian)
-               if (self%next_julian.eq.julianday .and. secondsofday.gt.self%next_seconds) then
+               if (self%next_julian == julianday .and. secondsofday > self%next_seconds) then
                   mm = mm + self%time_step
                   yyyy = yyyy + (mm-1)/12
                   mm = mod(mm-1,12)+1
@@ -239,7 +243,7 @@ contains
                call host%calendar_date(self%first_julian,yyyy0,mm,dd)
                yyyy = yyyy0 + ((yyyy-yyyy0+self%time_step-1)/self%time_step)*self%time_step
                call host%julian_day(yyyy,mm,dd,self%next_julian)
-               if (self%next_julian.eq.julianday .and. secondsofday.gt.self%next_seconds) then
+               if (self%next_julian == julianday .and. secondsofday > self%next_seconds) then
                   yyyy = yyyy + self%time_step
                   call host%julian_day(yyyy,mm,dd,self%next_julian)
                end if
@@ -373,6 +377,7 @@ contains
       type (type_key_value_pair),pointer :: pair
       integer,parameter                  :: yaml_unit = 100
       logical                            :: file_exists
+      logical                            :: success
 
       inquire(file='output.yaml',exist=file_exists)
       if (.not.file_exists) then
@@ -394,9 +399,18 @@ contains
             pair => node%first
             do while (associated(pair))
                if (pair%key=='') call host%fatal_error('configure_from_yaml','Error parsing output.yaml: empty file path specified.')
-               select type (dict=>pair%value)
+               select type (dict => pair%value)
                   class is (type_dictionary)
                      call process_file(field_manager,trim(pair%key),dict,title,postfix=postfix)
+                  class is (type_scalar)
+                     select case (pair%key)
+                     case ('allow_missing_fields')
+                        allow_missing_fields = dict%to_logical(allow_missing_fields, success)
+                        if (.not. success) call host%fatal_error('configure_from_yaml',trim(dict%path)//' is set to "'// &
+                           trim(dict%string)//'", which cannot be interpreted as a Boolean value.')
+                     case default
+                        call host%fatal_error('configure_from_yaml','Error parsing output.yaml: '//trim(dict%path)//' must either be a dictionary representing a file or a global configuration option.')
+                     end select
                   class default
                      call host%fatal_error('configure_from_yaml','Error parsing output.yaml: contents of '//trim(dict%path)//' must be a dictionary, not a single value.')
                end select

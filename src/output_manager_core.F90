@@ -164,22 +164,29 @@ contains
       class (type_base_output_field), intent(in) :: self
       type (type_field), target                  :: field
       class (type_base_output_field), pointer    :: output_field
-      output_field => wrap_field(field)
+      output_field => wrap_field(field, .false.)
    end function
 
-   function wrap_field(field) result(output_field)
+   function wrap_field(field, allow_unregistered) result(output_field)
       type (type_field), target          :: field
+      logical, intent(in)                :: allow_unregistered
       class (type_output_field), pointer :: output_field
+      output_field => null()
       select case (field%status)
       case (status_not_registered)
-         call host%fatal_error('create_field', 'Requested field "'//trim(field%name)//'" has not been registered with field manager.')
+         if (allow_unregistered) then
+            call host%log_message('WARNING: output field "'//trim(field%name)//'" is skipped because it has not been registered with field manager.')
+         else
+            call host%fatal_error('create_field', 'Requested output field "'//trim(field%name)//'" has not been registered with field manager.')
+         end if
       case (status_registered_no_data)
          call host%fatal_error('create_field', 'Data for requested field "'//trim(field%name)//'" have not been provided to field manager.')
+      case default
+         allocate(output_field)
+         output_field%source => field
+         output_field%data = output_field%source%data
+         output_field%output_name = trim(field%name)
       end select
-      allocate(output_field)
-      output_field%source => field
-      output_field%data = output_field%source%data
-      output_field%output_name = trim(field%name)
    end function
 
    recursive subroutine field_flag_as_required(self, required)
