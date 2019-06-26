@@ -16,14 +16,24 @@
 
 program test_flexout
 
+   use yaml_version, only: yaml_commit_id=>git_commit_id, &
+                           yaml_branch_name=>git_branch_name
    use yaml_types
    use yaml
+   use flexout_version, only: flexout_commit_id=>git_commit_id, &
+                              flexout_branch_name=>git_branch_name
    use output_manager
    use, intrinsic :: iso_fortran_env
 
    character(error_length) :: error
    character(256) :: path
    class (type_node),pointer :: root
+
+   write(*,*)
+   write(*,*) 'YAML:    ',yaml_commit_id,' (',yaml_branch_name,' branch)'
+   write(*,*) 'flexout: ',flexout_commit_id,' (',flexout_branch_name,' branch)'
+   write(*,*)
+
 
    call get_command_argument(1, path)
    if (path=='') then

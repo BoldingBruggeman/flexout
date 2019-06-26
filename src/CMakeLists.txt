@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.0)
 
 project(output_manager VERSION 0.1.0 LANGUAGES Fortran)
 
+set(GIT_COMMIT_ID ${output_manager_VERSION})
+set(GIT_BRANCH_NAME unknown)
+configure_file(flexout_version.F90.in flexout_version.F90)
+
 if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   add_compile_options("-ffree-line-length-none")
 endif()
@@ -13,6 +17,7 @@ add_library(field_manager
 )
 
 add_library(output_manager
+            ${CMAKE_CURRENT_BINARY_DIR}/flexout_version.F90
             output_manager.F90
             output_manager_core.F90
             formats/netcdf_output.F90
