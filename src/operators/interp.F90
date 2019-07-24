@@ -2,7 +2,7 @@ module output_operators_interp
 
    use output_manager_core
    use field_manager
-   use yaml_types
+   use yaml_settings
    use output_operators_base
 
    implicit none
@@ -42,23 +42,25 @@ module output_operators_interp
       procedure :: get_field
    end type
 
+   type,extends(type_list_populator) :: type_coordinate_list_populator
+      class (type_interp_operator), pointer :: operator => null()
+   contains
+      procedure :: set_length => coordinate_list_set_length
+      procedure :: create     => coordinate_list_create_element
+   end type
+
 contains
 
-   subroutine configure(self, mapping, field_manager)
-      class (type_interp_operator), intent(inout) :: self
-      class (type_dictionary),      intent(in)    :: mapping
-      type (type_field_manager),    intent(inout) :: field_manager
+   subroutine configure(self, settings, field_manager)
+      class (type_interp_operator), target, intent(inout) :: self
+      class (type_settings),                intent(inout) :: settings
+      type (type_field_manager),            intent(inout) :: field_manager
 
-      type (type_error),          pointer :: config_error
       type (type_dimension),      pointer :: dim
       character(len=string_length)        :: variable_name
-      class (type_list),          pointer :: list
-      type (type_list_item),      pointer :: list_item
-      integer                             :: i, n
-      logical                             :: success
+      class (type_coordinate_list_populator), pointer :: populator
 
-      self%dimension = mapping%get_string('dimension', error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
+      call settings%get(self%dimension, 'dimension', 'dimension to interpolate')
 
       ! Verify target dimension has been registered with field manager
       dim => field_manager%first_dimension
@@ -69,10 +71,8 @@ contains
       if (.not. associated(dim)) call host%fatal_error('type_interp_operator%initialize', &
          'Dimension "'//trim(self%dimension)//'" has not been registered with the field manager.')
 
-      self%out_of_bounds_treatment = mapping%get_integer('out_of_bounds_treatment', default=1, error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
-      variable_name = mapping%get_string('offset', default='', error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
+      call settings%get(self%out_of_bounds_treatment, 'out_of_bounds_treatment', 'out-of-bounds treatment', options=(/type_option(1, 'mask'), type_option(2, 'nearest'), type_option(3, 'extrapolate')/), default=1)
+      variable_name = settings%get_string('offset', 'variable to use as offset', default='')
       if (variable_name /= '') then
          if (variable_name(1:1) == '-') then
             self%offset_scale = -1._rk
@@ -80,38 +80,36 @@ contains
          end if
          self%offset_field => field_manager%select_for_output(trim(variable_name))
       end if
-      variable_name = mapping%get_string('source_coordinate', default='', error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
+      variable_name = settings%get_string('source_coordinate', 'variable with source coordinates', default='')
       if (variable_name /= '') self%source_field => field_manager%select_for_output(trim(variable_name))
-      list => mapping%get_list('coordinates', required=.true., error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
-      n = 0
-      list_item => list%first
-      do while (associated(list_item))
-         n = n + 1
-         list_item => list_item%next
-      end do
-      allocate(self%target_coordinates(n))
-      list_item => list%first
-      do i=1,n
-         select type (node => list_item%node)
-         class is (type_scalar)
-            self%target_coordinates(i) = node%to_real(0._rk, success)
-            if (.not. success) call host%fatal_error('type_interp_operator%configure', trim(node%path)//': unable to convert '//trim(node%string)//' to real.')
-            if (i > 1) then
-               if (self%target_coordinates(i) < self%target_coordinates(i - 1)) call host%fatal_error('type_interp_operator%configure', trim(list%path)//' should be monotonically increasing.')
-            end if
-         class default
-            call host%fatal_error('type_interp_operator%configure', trim(node%path)//' should be a real number.')
-         end select
-         list_item => list_item%next
-      end do
-      self%target_dimension_name = mapping%get_string('target_dimension', default=trim(self%dimension), error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
-      self%target_long_name = mapping%get_string('target_long_name', default='', error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
-      self%target_standard_name = mapping%get_string('target_standard_name', default='', error=config_error)
-      if (associated(config_error)) call host%fatal_error('type_interp_operator%configure', config_error%message)
+
+      allocate(populator)
+      populator%operator => self
+      call settings%get_list('coordinates', populator)
+      call settings%get(self%target_dimension_name, 'target_dimension', 'name for new interpolated dimension', default=trim(self%dimension))
+      call settings%get(self%target_long_name, 'target_long_name', 'long name for new coordinate variable', default='')
+      call settings%get(self%target_standard_name, 'target_standard_name', 'standard name for new coordinate variable', default='')
+   end subroutine
+
+   recursive subroutine coordinate_list_set_length(self, n)
+      class (type_coordinate_list_populator), intent(inout) :: self
+      integer,                                intent(in)    :: n
+      allocate(self%operator%target_coordinates(n))
+   end subroutine
+
+   recursive subroutine coordinate_list_create_element(self, index, item)
+      class (type_coordinate_list_populator), intent(inout) :: self
+      integer,                                intent(in)    :: index
+      type (type_list_item),                  intent(inout) :: item
+
+      character(len=4) :: strindex
+      class (type_real_setting), pointer :: real_setting
+
+      write (strindex, '(i0)') index
+      real_setting => type_real_setting_create(item, self%operator%target_coordinates(index), 'value '//trim(strindex), '')
+      if (index > 1) then
+         if (self%operator%target_coordinates(index) < self%operator%target_coordinates(index - 1)) call host%fatal_error('type_interp_operator%configure', trim(item%value%parent%path)//' should be monotonically increasing.')
+      end if
    end subroutine
 
    function apply(self, source) result(output_field)

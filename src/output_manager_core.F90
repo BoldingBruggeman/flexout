@@ -3,7 +3,7 @@ module output_manager_core
    use iso_fortran_env, only: error_unit
 
    use field_manager
-   use yaml_types,only: type_dictionary
+   use yaml_settings
 
    implicit none
 
@@ -221,9 +221,9 @@ contains
       if (present(attributes)) call attributes%update(self%source%attributes)
    end subroutine
 
-   subroutine configure(self,mapping)
-      class (type_file),      intent(inout) :: self
-      class (type_dictionary),intent(in)    :: mapping
+   subroutine configure(self, settings)
+      class (type_file),     intent(inout) :: self
+      class (type_settings), intent(inout) :: settings
    end subroutine
 
    subroutine initialize(self)
@@ -330,43 +330,24 @@ contains
       self%first_item => item
    end subroutine append_item
 
-   subroutine output_variable_settings_initialize(self,mapping,parent)
-      use yaml_types
-
+   subroutine output_variable_settings_initialize(self, settings, parent)
       class (type_output_variable_settings), intent(inout)        :: self
-      class (type_dictionary),               intent(in)           :: mapping
+      class (type_settings),                 intent(inout)        :: settings
       class (type_output_variable_settings), intent(in), optional :: parent
-
-      type (type_error),  pointer :: config_error
-      class (type_scalar),pointer :: scalar
-      logical                     :: success
 
       if (present(parent)) then
          self%time_method = parent%time_method
          self%final_operator => parent%final_operator
       end if
 
-      scalar => mapping%get_scalar('time_method',required=.false.,error=config_error)
-      if (associated(config_error)) call host%fatal_error('output_item_initialize',config_error%message)
-      if (.not.associated(scalar)) return
-      select case (scalar%string)
-      case ('mean')
-         self%time_method = time_method_mean
-      case ('point','instantaneous')
-         self%time_method = time_method_instantaneous
-      case ('integrated')
-         self%time_method = time_method_integrated
-      case default
-         self%time_method = scalar%to_integer(self%time_method,success)
-         if (.not.success.or.self%time_method<0.or.self%time_method>3) call host%fatal_error('output_item_initialize', trim(scalar%path)//' is set to "' &
-            //trim(scalar%string)//'", which is not a supported value. Supported: point (1), mean (2), integrated (3).')
-      end select
+      call settings%get(self%time_method, 'time_method', 'treatment of time dimension', options=(/type_option(time_method_mean, 'mean', 'mean'), &
+         type_option(time_method_instantaneous, 'instantaneous', 'point'), type_option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method)
    end subroutine output_variable_settings_initialize
 
-   subroutine operator_configure(self, mapping, field_manager)
-      class (type_base_operator), intent(inout) :: self
-      class (type_dictionary),    intent(in)    :: mapping
-      type (type_field_manager),  intent(inout) :: field_manager
+   subroutine operator_configure(self, settings, field_manager)
+      class (type_base_operator), target, intent(inout) :: self
+      class (type_settings),              intent(inout) :: settings
+      type (type_field_manager),          intent(inout) :: field_manager
    end subroutine
 
    function operator_apply(self, source) result(output_field)
