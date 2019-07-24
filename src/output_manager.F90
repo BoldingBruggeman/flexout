@@ -464,9 +464,9 @@ contains
 
       is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true.)
 #ifdef NETCDF_FMT
-      fmt = file_settings%get_integer('format', 'format', options=(/type_option(1, 'text'), type_option(2, 'NetCDF')/), default=2)
+      fmt = file_settings%get_integer('format', 'format', options=(/type_option(1, 'text', 'text'), type_option(2, 'NetCDF', 'netcdf')/), default=2)
 #else
-      fmt = file_settings%get_integer('format', 'format', options=(/type_option(1, 'text')/), default=1)
+      fmt = file_settings%get_integer('format', 'format', options=(/type_option(1, 'text', 'text')/), default=1)
 #endif
 
       select case (fmt)
