@@ -25,7 +25,7 @@ contains
       integer                             :: operator_type
       class (type_base_operator), pointer :: op
 
-      operator_type = settings%get_integer('type', 'operator type', options=(/type_option(1, 'interp')/))
+      operator_type = settings%get_integer('type', 'operator type', options=(/option(1, 'interp')/))
       select case (operator_type)
       case (1)
          allocate(type_interp_operator::op)

@@ -340,8 +340,8 @@ contains
          self%final_operator => parent%final_operator
       end if
 
-      call settings%get(self%time_method, 'time_method', 'treatment of time dimension', options=(/type_option(time_method_mean, 'mean', 'mean'), &
-         type_option(time_method_instantaneous, 'instantaneous', 'point'), type_option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method)
+      call settings%get(self%time_method, 'time_method', 'treatment of time dimension', options=(/option(time_method_mean, 'mean', 'mean'), &
+         option(time_method_instantaneous, 'instantaneous', 'point'), option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method)
    end subroutine output_variable_settings_initialize
 
    subroutine operator_configure(self, settings, field_manager)

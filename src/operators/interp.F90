@@ -71,7 +71,7 @@ contains
       if (.not. associated(dim)) call host%fatal_error('type_interp_operator%initialize', &
          'Dimension "'//trim(self%dimension)//'" has not been registered with the field manager.')
 
-      call settings%get(self%out_of_bounds_treatment, 'out_of_bounds_treatment', 'out-of-bounds treatment', options=(/type_option(1, 'mask'), type_option(2, 'nearest'), type_option(3, 'extrapolate')/), default=1)
+      call settings%get(self%out_of_bounds_treatment, 'out_of_bounds_treatment', 'out-of-bounds treatment', options=(/option(1, 'mask'), option(2, 'nearest'), option(3, 'extrapolate')/), default=1)
       variable_name = settings%get_string('offset', 'variable to use as offset', default='')
       if (variable_name /= '') then
          if (variable_name(1:1) == '-') then
@@ -106,7 +106,7 @@ contains
       class (type_real_setting), pointer :: real_setting
 
       write (strindex, '(i0)') index
-      real_setting => type_real_setting_create(item, self%operator%target_coordinates(index), 'value '//trim(strindex), '')
+      real_setting => type_real_setting_create(item, 'value '//trim(strindex), '', target=self%operator%target_coordinates(index))
       if (index > 1) then
          if (self%operator%target_coordinates(index) < self%operator%target_coordinates(index - 1)) call host%fatal_error('type_interp_operator%configure', trim(item%value%parent%path)//' should be monotonically increasing.')
       end if

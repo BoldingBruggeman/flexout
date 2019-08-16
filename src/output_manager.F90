@@ -18,7 +18,7 @@ module output_manager
 
    class (type_file), pointer :: first_file
    logical                    :: files_initialized
-   logical, save, public     :: allow_missing_fields = .false.
+   logical, save, public, target :: allow_missing_fields = .false.
 
    interface output_manager_save
       module procedure output_manager_save1
@@ -456,7 +456,7 @@ contains
       class (type_slice_operator), pointer :: slice_operator
 
       if (pair%key == 'allow_missing_fields') then
-         logical_setting => type_logical_setting_create(pair, allow_missing_fields, 'ignore unknown requested output fields')
+         logical_setting => type_logical_setting_create(pair, 'ignore unknown requested output fields', target=allow_missing_fields)
          return
       end if
 
@@ -464,9 +464,9 @@ contains
 
       is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true.)
 #ifdef NETCDF_FMT
-      fmt = file_settings%get_integer('format', 'format', options=(/type_option(1, 'text', 'text'), type_option(2, 'NetCDF', 'netcdf')/), default=2)
+      fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text'), option(2, 'NetCDF', 'netcdf')/), default=2)
 #else
-      fmt = file_settings%get_integer('format', 'format', options=(/type_option(1, 'text', 'text')/), default=1)
+      fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text')/), default=1)
 #endif
 
       select case (fmt)
@@ -486,8 +486,8 @@ contains
       ! Can be used for CF global attributes
       call file_settings%get(file%title, 'title', 'title', default=self%title)
       call file_settings%get(file%time_unit, 'time_unit', 'time unit', default=time_unit_day, options=(/ &
-         type_option(time_unit_second, 'second', 'second'), type_option(time_unit_hour, 'hour', 'hour'), type_option(time_unit_day, 'day', 'day'), &
-         type_option(time_unit_month, 'month', 'month'), type_option(time_unit_year, 'year', 'year'), type_option(time_unit_dt, 'model time step', 'dt')/))
+         option(time_unit_second, 'second', 'second'), option(time_unit_hour, 'hour', 'hour'), option(time_unit_day, 'day', 'day'), &
+         option(time_unit_month, 'month', 'month'), option(time_unit_year, 'year', 'year'), option(time_unit_dt, 'model time step', 'dt')/))
 
       ! Determine time step
       call file_settings%get(file%time_step, 'time_step', 'number of time units between output', minimum=1, default=1)
