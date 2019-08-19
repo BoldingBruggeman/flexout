@@ -526,18 +526,14 @@ contains
       call configure_group(file, file_settings, variable_settings)
    end subroutine process_file
 
-   recursive subroutine configure_group(file, settings, default_variable_settings)
+   recursive subroutine configure_group(file, settings, variable_settings)
       class (type_file), target, intent(inout) :: file
       class (type_settings),     intent(inout) :: settings
-      class (type_output_variable_settings), optional, intent(in) :: default_variable_settings
+      class (type_output_variable_settings), target :: variable_settings
 
-      class (type_output_variable_settings), pointer :: variable_settings
       class (type_operator_populator), pointer :: operator_populator
       class (type_group_populator),    pointer :: group_populator
       class (type_variable_populator), pointer :: variable_populator
-
-      variable_settings => file%create_settings()
-      call variable_settings%initialize(settings, default_variable_settings)
 
       ! Get operators
       allocate(operator_populator)
@@ -564,10 +560,19 @@ contains
       integer,                      intent(in)    :: index
       type (type_list_item),        intent(inout) :: item
 
-      class (type_settings), pointer :: group_settings
+      class (type_settings),                 pointer :: group_settings
+      class (type_output_variable_settings), pointer :: variable_settings
 
+      ! Obtain dictionary with user-provided settings
       group_settings => type_settings_create(item)
-      call configure_group(self%file, group_settings, self%variable_settings)
+
+      ! Create object that will contain final output settings for this group
+      variable_settings => self%file%create_settings()
+      call variable_settings%initialize(group_settings, self%variable_settings)
+
+      ! Configure output settings
+      ! This will also read additional user options from variable_settings and apply them to group_settings.
+      call configure_group(self%file, group_settings, variable_settings)
    end subroutine
 
    recursive subroutine create_operator_settings(self, index, item)
