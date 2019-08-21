@@ -50,7 +50,7 @@ contains
       logical :: success
 
       ! Determine time of first output (default to start of simulation)
-      time_reference = settings%get_string('time_reference', 'reference date and time to use in time units', default='')
+      time_reference = settings%get_string('time_reference', 'reference date and time to use in time units', units='yyyy-mm-dd HH:MM:SS', default='')
       if (time_reference /= '') then
          call read_time_string(time_reference, self%reference_julian, self%reference_seconds, success)
          if (.not. success) call host%fatal_error('process_file','Error parsing output.yaml: invalid value "'//time_reference//'" specified for '//trim(self%path)//'/time_reference. Required format: yyyy-mm-dd HH:MM:SS.')
