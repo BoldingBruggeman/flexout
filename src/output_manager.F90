@@ -29,6 +29,7 @@ module output_manager
       type (type_field_manager), pointer :: fm => null()
       character(len=:), allocatable :: title
       character(len=:), allocatable :: postfix
+      logical :: ignore = .false.
    contains
       procedure :: create => process_file
    end type
@@ -408,18 +409,21 @@ contains
       class (type_settings),       pointer :: settings_
       class (type_file_populator), pointer :: populator
 
+      inquire(file='output.yaml',exist=file_exists)
+
       allocate(populator)
       populator%fm => field_manager
       populator%title = trim(title)
       if (present(postfix)) populator%postfix = postfix
       if (present(settings)) then
          settings_ => settings
+         populator%ignore = file_exists
          call settings_%populate(populator)
+         populator%ignore = .false.
       else
          settings_ => type_settings_create(populator=populator)
       end if
 
-      inquire(file='output.yaml',exist=file_exists)
       if (file_exists) then
          call settings_%load('output.yaml', yaml_unit)
       elseif (.not. present(settings)) then
@@ -462,7 +466,12 @@ contains
 
       file_settings => type_settings_create(pair, 'path of output file, excluding extension')
 
-      is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true., display=display_advanced)
+      is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true., display=display_maximum)
+      is_active = file_settings%get_logical('use', 'write output to this file', default=.true., display=display_advanced)
+      if (self%ignore) then
+         call host%log_message('WARNING: '//pair%value%path//' will be ignored because output.yaml is present.')
+         is_active = .false.
+      end if
 #ifdef NETCDF_FMT
       fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text'), option(2, 'NetCDF', 'netcdf')/), default=2)
 #else
@@ -481,7 +490,8 @@ contains
       ! Create file object and prepend to list.
       file%path = pair%name
       if (allocated(self%postfix)) file%postfix = self%postfix
-      call output_manager_add_file(self%fm, file)
+      file%field_manager => self%fm
+      if (is_active) call output_manager_add_file(self%fm, file)
 
       ! Can be used for CF global attributes
       call file_settings%get(file%title, 'title', 'title', default=self%title, display=display_advanced)
