@@ -451,18 +451,18 @@ contains
 
       type (type_dimension),       pointer :: dim
       integer                              :: global_start, global_stop, stride
-      character(len=8)                     :: strmax
       logical                              :: is_active
       class (type_slice_operator), pointer :: slice_operator
+      integer                              :: display
 
       if (pair%key == 'allow_missing_fields') then
          logical_setting => type_logical_setting_create(pair, 'ignore unknown requested output fields', target=allow_missing_fields)
          return
       end if
 
-      file_settings => type_settings_create(pair, 'path of output file')
+      file_settings => type_settings_create(pair, 'path of output file, excluding extension')
 
-      is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true.)
+      is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true., display=display_advanced)
 #ifdef NETCDF_FMT
       fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text'), option(2, 'NetCDF', 'netcdf')/), default=2)
 #else
@@ -484,19 +484,19 @@ contains
       call output_manager_add_file(self%fm, file)
 
       ! Can be used for CF global attributes
-      call file_settings%get(file%title, 'title', 'title', default=self%title)
+      call file_settings%get(file%title, 'title', 'title', default=self%title, display=display_advanced)
       call file_settings%get(file%time_unit, 'time_unit', 'time unit', default=time_unit_day, options=(/ &
          option(time_unit_second, 'second', 'second'), option(time_unit_hour, 'hour', 'hour'), option(time_unit_day, 'day', 'day'), &
          option(time_unit_month, 'month', 'month'), option(time_unit_year, 'year', 'year'), option(time_unit_dt, 'model time step', 'dt')/))
 
       ! Determine time step
       call file_settings%get(file%time_step, 'time_step', 'number of time units between output', minimum=1, default=1)
-      string = file_settings%get_string('time_start', 'start', 'yyyy-mm-dd HH:MM:SS', default='')
+      string = file_settings%get_string('time_start', 'start', 'yyyy-mm-dd HH:MM:SS', default='', display=display_advanced)
       if (string /= '') then
          call read_time_string(string, file%first_julian, file%first_seconds, success)
          if (.not. success) call host%fatal_error('process_file','Error in output configuration: invalid time_start "'//string//'" specified for file "'//pair%name//'". Required format: yyyy-mm-dd HH:MM:SS.')
       end if
-      string = file_settings%get_string('time_stop', 'stop', 'yyyy-mm-dd HH:MM:SS', default='')
+      string = file_settings%get_string('time_stop', 'stop', 'yyyy-mm-dd HH:MM:SS', default='', display=display_advanced)
       if (string /= '') then
          call read_time_string(string, file%last_julian, file%last_seconds, success)
          if (.not. success) call host%fatal_error('process_file','Error in output configuration: invalid time_stop "'//string//'" specified for file "'//pair%name//'". Required format: yyyy-mm-dd HH:MM:SS.')
@@ -507,11 +507,12 @@ contains
       dim => self%fm%first_dimension
       do while (associated(dim))
          if (dim%iterator /= '') then
-            write (strmax,'(i0)') dim%global_length
-            global_start = file_settings%get_integer(trim(dim%iterator)//'_start', 'start index for '//trim(dim%iterator)//' dimension', default=1, minimum=0, maximum=dim%global_length)
-            global_stop = file_settings%get_integer(trim(dim%iterator)//'_stop', 'stop index for '//trim(dim%iterator)//' dimension', default=dim%global_length, minimum=1, maximum=dim%global_length)
+            display = display_advanced
+            if (dim%global_length == 1) display = display_maximum
+            global_start = file_settings%get_integer(trim(dim%iterator)//'_start', 'start index for '//trim(dim%iterator)//' dimension', default=1, minimum=0, maximum=dim%global_length, display=display)
+            global_stop = file_settings%get_integer(trim(dim%iterator)//'_stop', 'stop index for '//trim(dim%iterator)//' dimension', default=dim%global_length, minimum=1, maximum=dim%global_length, display=display)
             if (global_start > global_stop) call host%fatal_error('process_file','Error parsing output.yaml: '//trim(dim%iterator)//'_stop must equal or exceed '//trim(dim%iterator)//'_start')
-            stride = file_settings%get_integer(trim(dim%iterator)//'_stride', 'stride for '//trim(dim%iterator)//' dimension', default=1, minimum=1)
+            stride = file_settings%get_integer(trim(dim%iterator)//'_stride', 'stride for '//trim(dim%iterator)//' dimension', default=1, minimum=1, display=display)
             call slice_operator%add(trim(dim%name), global_start, global_stop, stride)
          end if
          dim => dim%next
@@ -539,13 +540,13 @@ contains
       allocate(operator_populator)
       operator_populator%field_manager => file%field_manager
       operator_populator%variable_settings => variable_settings
-      call settings%get_list('operators', operator_populator)
+      call settings%get_list('operators', operator_populator, display=display_advanced)
 
       ! Get list with groups [if any]
       allocate(group_populator)
       group_populator%file => file
       group_populator%variable_settings => variable_settings
-      call settings%get_list('groups', group_populator)
+      call settings%get_list('groups', group_populator, display=display_advanced)
 
       ! Get list with variables
       allocate(variable_populator)
@@ -599,7 +600,7 @@ contains
       variable_settings => type_settings_create(item)
 
       ! Name of source variable
-      source_name = variable_settings%get_string('source', 'name in model')
+      source_name = variable_settings%get_string('source', 'variable name in model')
 
       allocate(output_item)
       output_item%settings => self%file%create_settings()
@@ -614,18 +615,18 @@ contains
          end if
 
          ! Prefix for output name
-         call variable_settings%get(output_item%prefix, 'prefix', 'name prefix used in output', default='')
+         call variable_settings%get(output_item%prefix, 'prefix', 'name prefix used in output', default='', display=display_advanced)
 
          ! Postfix for output name
-         call variable_settings%get(output_item%postfix, 'postfix', 'name postfix used in output', default='')
+         call variable_settings%get(output_item%postfix, 'postfix', 'name postfix used in output', default='', display=display_advanced)
 
          ! Output level
-         call variable_settings%get(output_item%output_level, 'output_level', 'output level', default=output_level_default)
+         call variable_settings%get(output_item%output_level, 'output_level', 'output level', default=output_level_default, display=display_advanced)
       else
          output_item%field => self%file%field_manager%select_for_output(source_name)
 
          ! Name of output variable (may differ from source name)
-         call variable_settings%get(output_item%name, 'name', 'name used in output', default=source_name)
+         call variable_settings%get(output_item%name, 'name', 'name used in output', default=source_name, display=display_advanced)
       end if
       call self%file%append_item(output_item)
    end subroutine

@@ -50,14 +50,14 @@ contains
       logical :: success
 
       ! Determine time of first output (default to start of simulation)
-      time_reference = settings%get_string('time_reference', 'reference date and time to use in time units', units='yyyy-mm-dd HH:MM:SS', default='')
+      time_reference = settings%get_string('time_reference', 'reference date and time to use in time units', units='yyyy-mm-dd HH:MM:SS', default='', display=display_advanced)
       if (time_reference /= '') then
          call read_time_string(time_reference, self%reference_julian, self%reference_seconds, success)
          if (.not. success) call host%fatal_error('process_file','Error parsing output.yaml: invalid value "'//time_reference//'" specified for '//trim(self%path)//'/time_reference. Required format: yyyy-mm-dd HH:MM:SS.')
       end if
 
       ! Determine interval between calls to nf90_sync (default: after every output)
-      call settings%get(self%sync_interval, 'sync_interval', 'number of output steps between sychronization to disk (<= 0: sync on close only)', default=1)
+      call settings%get(self%sync_interval, 'sync_interval', 'number of output steps between sychronization to disk (<= 0: sync on close only)', default=1, display=display_advanced)
    end subroutine
 
    subroutine initialize(self)
@@ -312,7 +312,7 @@ contains
             self%xtype = parent%xtype
          end select
       end if
-      call settings%get(self%xtype, 'xtype', 'data type', options=(/option(-1, 'default', 'default'), option(NF90_FLOAT, '32-bit float', 'single'), option(NF90_DOUBLE, '64-bit double', 'double')/), default=self%xtype)
+      call settings%get(self%xtype, 'xtype', 'data type', options=(/option(-1, 'default', 'default'), option(NF90_FLOAT, '32-bit float', 'single'), option(NF90_DOUBLE, '64-bit double', 'double')/), default=self%xtype, display=display_advanced)
    end subroutine netcdf_variable_settings_initialize
 
 #endif
