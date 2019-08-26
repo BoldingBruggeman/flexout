@@ -475,7 +475,7 @@ contains
 
       file_settings => type_settings_create(pair, 'path of output file, excluding extension')
 
-      is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true., display=display_maximum)
+      is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true., display=display_hidden)
       is_active = file_settings%get_logical('use', 'write output to this file', default=.true., display=display_advanced)
       if (self%ignore) then
          call host%log_message('WARNING: '//pair%value%path//' will be ignored because output.yaml is present.')
@@ -527,7 +527,7 @@ contains
       do while (associated(dim))
          if (dim%iterator /= '') then
             display = display_advanced
-            if (dim%global_length == 1) display = display_maximum
+            if (dim%global_length == 1) display = display_hidden
             global_start = file_settings%get_integer(trim(dim%iterator)//'_start', 'start index for '//trim(dim%iterator)//' dimension', default=1, minimum=0, maximum=dim%global_length, display=display)
             global_stop = file_settings%get_integer(trim(dim%iterator)//'_stop', 'stop index for '//trim(dim%iterator)//' dimension', default=dim%global_length, minimum=1, maximum=dim%global_length, display=display)
             if (global_start > global_stop) call host%fatal_error('process_file','Error parsing output.yaml: '//trim(dim%iterator)//'_stop must equal or exceed '//trim(dim%iterator)//'_start')

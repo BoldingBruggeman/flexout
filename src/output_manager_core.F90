@@ -335,13 +335,17 @@ contains
       class (type_settings),                 intent(inout)        :: settings
       class (type_output_variable_settings), intent(in), optional :: parent
 
+      integer :: display
+
+      display = display_normal
       if (present(parent)) then
          self%time_method = parent%time_method
          self%final_operator => parent%final_operator
+         display = display_advanced
       end if
 
       call settings%get(self%time_method, 'time_method', 'treatment of time dimension', options=(/option(time_method_mean, 'mean', 'mean'), &
-         option(time_method_instantaneous, 'instantaneous', 'point'), option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method)
+         option(time_method_instantaneous, 'instantaneous', 'point'), option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method, display=display)
    end subroutine output_variable_settings_initialize
 
    subroutine operator_configure(self, settings, field_manager)
