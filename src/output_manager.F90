@@ -407,6 +407,7 @@ contains
       logical                              :: file_exists
       integer,parameter                    :: yaml_unit = 100
       class (type_settings),       pointer :: settings_
+      type (type_settings)                 :: ignored_settings
       class (type_file_populator), pointer :: populator
 
       inquire(file='output.yaml',exist=file_exists)
@@ -415,21 +416,29 @@ contains
       populator%fm => field_manager
       populator%title = trim(title)
       if (present(postfix)) populator%postfix = postfix
+
       if (present(settings)) then
          settings_ => settings
-         populator%ignore = file_exists
-         call settings_%populate(populator)
-         populator%ignore = .false.
       else
-         settings_ => type_settings_create(populator=populator)
+         allocate(settings_)
       end if
 
       if (file_exists) then
+         ! Settings from output.yaml
+         if (present(settings)) then
+            ! yaml node also provided, but output.yaml takes priority.
+            ! Read yaml node values into a dummy settings object, so everything is still properly parsed and the user receives warnings.
+            populator%ignore = .true.
+            ignored_settings%backing_store_node => settings%backing_store_node
+            call ignored_settings%populate(populator)
+            populator%ignore = .false.
+         end if
          call settings_%load('output.yaml', yaml_unit)
       elseif (.not. present(settings)) then
-         call host%log_message('WARNING: no output files will be written because output.yaml is not present.')
+         call host%log_message('WARNING: no output files will be written because output settings have not been provided.')
          return
       end if
+      call settings_%populate(populator)
    end subroutine
 
    subroutine output_manager_add_file(field_manager, file)
