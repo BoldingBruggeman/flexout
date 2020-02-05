@@ -86,6 +86,7 @@ contains
       nconstants = 0
       output_field => self%first_field
       do while (associated(output_field))
+         call output_field%get_metadata(dimensions=dimensions)
          if (associated(output_field%data%p1d)) then
             ! 1D variable - create separate file for it
             allocate(file_with_1d_data)
@@ -93,7 +94,6 @@ contains
             file_with_1d_data%values => output_field%data%p1d
             file_with_1d_data%path = trim(self%path)//'_'//trim(file_with_1d_data%field%output_name)//trim(self%postfix)//extension
             file_with_1d_data%title = self%title
-            call output_field%get_metadata(dimensions=dimensions)
             do i=1,size(dimensions)
                if (dimensions(i)%p%length>1) then
                   file_with_1d_data%dimension => dimensions(i)%p
@@ -129,6 +129,7 @@ contains
          output_field => self%first_field
          do while (associated(output_field))
             if (associated(output_field%data%p0d)) then
+               call output_field%get_metadata(dimensions=dimensions)
                if (has_dimension(dimensions, id_dim_time)) then
                   nscalar = nscalar + 1
                   scalar_file%variables(nscalar)%field => output_field
