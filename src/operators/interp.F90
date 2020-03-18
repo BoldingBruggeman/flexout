@@ -197,20 +197,9 @@ contains
       result%dimensions(result%idim)%p => self%target_dimension
 
       call source%data%get_extents(extents)
+      if (result%idatadim /= size(extents)) call host%fatal_error('type_interp_operator%initialize', 'interp can currently only operate on final dimension of source array.')
       extents(result%idatadim) = size(self%target_coordinates)
-      select case (size(extents))
-      case (3)
-         if (result%idatadim /= 3) call host%fatal_error('type_interp_operator%initialize', 'interp can currently only operate along 3rd dimension of 3D arrays.')
-         allocate(result%result_3d(extents(1), extents(2), extents(3)))
-         call result%data%set(result%result_3d)
-      case (2)
-         if (result%idatadim /= 2) call host%fatal_error('type_interp_operator%initialize', 'interp can currently only operate along 2nd dimension of 2D arrays.')
-         allocate(result%result_2d(extents(1), extents(2)))
-         call result%data%set(result%result_2d)
-      case (1)
-         allocate(result%result_1d(size(self%target_coordinates)))
-         call result%data%set(result%result_1d)
-      end select
+      call result%allocate(extents)
       call result%fill(result%out_of_bounds_value)
    end function
 

@@ -11,8 +11,9 @@ module output_operators_base
    public type_operator_result, type_universal_operator_result
 
    type, extends(type_base_output_field) :: type_operator_result
-      class (type_base_operator), pointer :: operator => null()
+      class (type_base_operator),     pointer :: operator => null()
       class (type_base_output_field), pointer :: source => null()
+      integer               :: rank = -1
       real(rk)              :: result_0d
       real(rk), allocatable :: result_1d(:)
       real(rk), allocatable :: result_2d(:,:)
@@ -24,6 +25,7 @@ module output_operators_base
       procedure :: get_metadata
       procedure :: flag_as_required
       procedure :: fill
+      procedure :: allocate
       procedure :: get_field
    end type
 
@@ -76,15 +78,36 @@ module output_operators_base
       class (type_operator_result), intent(inout) :: self
       real(rk),                     intent(in)    :: value
 
-      if (allocated(self%result_3d)) then
-         self%result_3d(:,:,:) = value
-      elseif (allocated(self%result_2d)) then
-         self%result_2d(:,:) = value
-      elseif (allocated(self%result_1d)) then
-         self%result_1d(:) = value
-      else
+      select case (self%rank)
+      case (0)
          self%result_0d = value
-      end if
+      case (1)
+         self%result_1d(:) = value
+      case (2)
+         self%result_2d(:,:) = value
+      case (3)
+         self%result_3d(:,:,:) = value
+      end select
+   end subroutine
+
+   subroutine allocate(self, extents)
+      class (type_operator_result), target, intent(inout) :: self
+      integer,                              intent(in)    :: extents(:)
+
+      self%rank = size(extents)
+      select case (self%rank)
+      case (0)
+         self%data%p0d => self%result_0d
+      case (1)
+         allocate(self%result_1d(extents(1)))
+         call self%data%set(self%result_1d)
+      case (2)
+         allocate(self%result_2d(extents(1), extents(2)))
+         call self%data%set(self%result_2d)
+      case (3)
+         allocate(self%result_3d(extents(1), extents(2), extents(3)))
+         call self%data%set(self%result_3d)
+      end select
    end subroutine
 
    recursive function get_field(self, field) result(output_field)

@@ -94,7 +94,8 @@ module output_manager_core
    end type type_base_output_field
 
    type, extends(type_base_output_field) :: type_output_field
-      type (type_field), pointer :: source => null()
+      type (type_field), pointer :: source   => null()
+      logical,           pointer :: used_now => null()
    contains
       procedure :: flag_as_required => field_flag_as_required
       procedure :: get_metadata     => field_get_metadata
@@ -187,13 +188,14 @@ contains
          output_field%source => field
          output_field%data = output_field%source%data
          output_field%output_name = trim(field%name)
+         output_field%used_now => field%used_now
       end select
    end function
 
    recursive subroutine field_flag_as_required(self, required)
       class (type_output_field), intent(inout) :: self
       logical, intent(in) :: required
-      if (associated(self%source%used_now) .and. required) self%source%used_now = .true.
+      if (associated(self%used_now) .and. required) self%used_now = .true.
    end subroutine
 
    recursive subroutine field_get_metadata(self, long_name, units, dimensions, minimum, maximum, fill_value, standard_name, path, attributes)

@@ -19,6 +19,7 @@ module output_manager
    class (type_file), pointer :: first_file
    logical                    :: files_initialized
    logical, save, public, target :: allow_missing_fields = .false.
+   type (type_logical_pointer), allocatable :: used(:)
 
    interface output_manager_save
       module procedure output_manager_save1
@@ -230,6 +231,11 @@ contains
 
          file => file%next
       end do
+      if (associated(first_file)) then
+         call first_file%field_manager%collect_used(used)
+      else
+         allocate(used(0))
+      end if
       files_initialized = .true.
    end subroutine
 
@@ -290,6 +296,7 @@ contains
    subroutine output_manager_prepare_save(julianday, secondsofday, microseconds, n)
       integer,intent(in) :: julianday, secondsofday, microseconds, n
 
+      integer                                 :: i
       class (type_file),              pointer :: file
       class (type_base_output_field), pointer :: output_field
       logical                                 :: required
@@ -297,7 +304,9 @@ contains
       if (.not. files_initialized) call output_manager_start(julianday, secondsofday, microseconds, n)
 
       ! Start by marking all fields as not needing computation
-      if (associated(first_file)) call first_file%field_manager%reset_used()
+      do i = 1, size(used)
+         used(i)%p = .false.
+      end do
 
       file => first_file
       do while (associated(file))

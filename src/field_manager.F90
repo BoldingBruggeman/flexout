@@ -13,7 +13,7 @@ module field_manager
    public type_dimension, type_dimension_pointer, has_dimension
    public type_attribute, type_real_attribute, type_integer_attribute, type_string_attribute, type_attributes
    public type_field_set, type_field_set_member
-   public type_nd_data_pointer
+   public type_nd_data_pointer, type_logical_pointer
 
    ! Public parameters
    public string_length,default_fill_value,default_minimum,default_maximum
@@ -169,6 +169,10 @@ module field_manager
       procedure :: finalize => field_set_finalize
    end type
 
+   type type_logical_pointer
+      logical, pointer :: p => null()
+   end type
+
    type type_field_manager
       type (type_dimension), pointer :: first_dimension => null()
 
@@ -198,7 +202,7 @@ module field_manager
       procedure :: find_dimension
       procedure :: find_category
       procedure :: get_state
-      procedure :: reset_used
+      procedure :: collect_used
       generic :: send_data => send_data_0d,send_data_1d,send_data_2d,send_data_3d,send_data_by_name_0d,send_data_by_name_1d,send_data_by_name_2d,send_data_by_name_3d
    end type type_field_manager
 
@@ -385,20 +389,35 @@ contains
       self%nregistered = 0
    end subroutine finalize
 
-   subroutine reset_used(self)
-      class (type_field_manager), intent(inout) :: self
+   subroutine collect_used(self, used)
+      class (type_field_manager),               intent(inout) :: self
+      type (type_logical_pointer), allocatable, intent(inout) :: used(:)
 
+      integer                    :: n
       integer                    :: ibin
       type (type_field), pointer :: field
 
+      n = 0
       do ibin=1,hash_table_size
          field => self%field_table(ibin)%first_field
          do while (associated(field))
-            if (associated(field%used_now)) field%used_now = .false.
+            if (associated(field%used_now)) n = n + 1
             field => field%next
          end do
       end do
-   end subroutine reset_used
+      allocate(used(n))
+      n = 0
+      do ibin=1,hash_table_size
+         field => self%field_table(ibin)%first_field
+         do while (associated(field))
+            if (associated(field%used_now)) then
+               n = n + 1
+               used(n)%p => field%used_now
+            end if
+            field => field%next
+         end do
+      end do
+   end subroutine collect_used
 
    function find_dimension(self,dimid) result(dim)
       class (type_field_manager), intent(in) :: self

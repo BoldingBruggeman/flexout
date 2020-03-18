@@ -37,6 +37,7 @@ contains
       type (type_dimension_pointer), allocatable :: dimensions(:)
       integer                                    :: itimedim
       class (type_result), pointer               :: result
+      integer, allocatable                       :: extents(:)
 
       call source%get_metadata(dimensions=dimensions, fill_value=fill_value)
       do itimedim=1,size(dimensions)
@@ -54,18 +55,8 @@ contains
       output_field => result
       result%method = self%method
 
-      if (associated(result%source%data%p3d)) then
-         allocate(result%result_3d(size(result%source%data%p3d,1), size(result%source%data%p3d,2), size(result%source%data%p3d,3)))
-         result%data%p3d => result%result_3d
-      elseif (associated(result%source%data%p2d)) then
-         allocate(result%result_2d(size(result%source%data%p2d,1), size(result%source%data%p2d,2)))
-         result%data%p2d => result%result_2d
-      elseif (associated(result%source%data%p1d)) then
-         allocate(result%result_1d(size(result%source%data%p1d)))
-         result%data%p1d => result%result_1d
-      elseif (associated(result%source%data%p0d)) then
-         result%data%p0d => result%result_0d
-      end if
+      call source%data%get_extents(extents)
+      call result%allocate(extents)
       if (self%method == time_method_mean) call result%fill(fill_value)
    end function
 
@@ -79,17 +70,26 @@ contains
    recursive subroutine new_data(self)
       class (type_result), intent(inout) :: self
 
+      integer :: i, j, k
+
       call self%source%before_save()
       if (self%n == 0) call self%fill(0.0_rk)
-      if (allocated(self%result_3d)) then
-         self%result_3d(:,:,:) = self%result_3d + self%source%data%p3d
-      elseif (allocated(self%result_2d)) then
-         self%result_2d(:,:) = self%result_2d + self%source%data%p2d
-      elseif (allocated(self%result_1d)) then
-         self%result_1d(:) = self%result_1d + self%source%data%p1d
-      else
+      select case (self%rank)
+      case (0)
          self%result_0d = self%result_0d + self%source%data%p0d
-      end if
+      case (1)
+         do concurrent (i=1:size(self%result_1d))
+            self%result_1d(i) = self%result_1d(i) + self%source%data%p1d(i)
+         end do
+      case (2)
+         do concurrent (i=1:size(self%result_2d, 1), j=1:size(self%result_2d, 2))
+            self%result_2d(i,j) = self%result_2d(i,j) + self%source%data%p2d(i,j)
+         end do
+      case (3)
+         do concurrent (i=1:size(self%result_3d, 1), j=1:size(self%result_3d, 2), k=1:size(self%result_3d, 3))
+            self%result_3d(i,j,k) = self%result_3d(i,j,k) + self%source%data%p3d(i,j,k)
+         end do
+      end select
       self%n = self%n + 1
    end subroutine
 
@@ -97,15 +97,16 @@ contains
       class (type_result), intent(inout) :: self
 
       if (self%method == time_method_mean) then
-         if (allocated(self%result_3d)) then
-            self%result_3d(:,:,:) = self%result_3d/self%n
-         elseif (allocated(self%result_2d)) then
-            self%result_2d(:,:) = self%result_2d/self%n
-         elseif (allocated(self%result_1d)) then
-            self%result_1d(:) = self%result_1d/self%n
-         else
-            self%result_0d = self%result_0d/self%n
-         end if
+         select case (self%rank)
+         case (0)
+            self%result_0d = self%result_0d / self%n
+         case (1)
+            self%result_1d(:) = self%result_1d / self%n
+         case (2)
+            self%result_2d(:,:) = self%result_2d / self%n
+         case (3)
+            self%result_3d(:,:,:) = self%result_3d / self%n
+         end select
       end if
       self%n = 0
    end subroutine
