@@ -18,6 +18,7 @@ module output_operators_base
       real(rk), allocatable :: result_1d(:)
       real(rk), allocatable :: result_2d(:,:)
       real(rk), allocatable :: result_3d(:,:,:)
+      type (type_nd_data_pointer) :: source_data
       type (type_dimension_pointer), allocatable :: dimensions(:)
    contains
       procedure :: new_data
@@ -108,6 +109,7 @@ module output_operators_base
          allocate(self%result_3d(extents(1), extents(2), extents(3)))
          call self%data%set(self%result_3d)
       end select
+      self%source_data = self%source%data
    end subroutine
 
    recursive function get_field(self, field) result(output_field)

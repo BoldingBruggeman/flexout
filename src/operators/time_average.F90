@@ -76,18 +76,18 @@ contains
       if (self%n == 0) call self%fill(0.0_rk)
       select case (self%rank)
       case (0)
-         self%result_0d = self%result_0d + self%source%data%p0d
+         self%result_0d = self%result_0d + self%source_data%p0d
       case (1)
          do concurrent (i=1:size(self%result_1d))
-            self%result_1d(i) = self%result_1d(i) + self%source%data%p1d(i)
+            self%result_1d(i) = self%result_1d(i) + self%source_data%p1d(i)
          end do
       case (2)
          do concurrent (i=1:size(self%result_2d, 1), j=1:size(self%result_2d, 2))
-            self%result_2d(i,j) = self%result_2d(i,j) + self%source%data%p2d(i,j)
+            self%result_2d(i,j) = self%result_2d(i,j) + self%source_data%p2d(i,j)
          end do
       case (3)
          do concurrent (i=1:size(self%result_3d, 1), j=1:size(self%result_3d, 2), k=1:size(self%result_3d, 3))
-            self%result_3d(i,j,k) = self%result_3d(i,j,k) + self%source%data%p3d(i,j,k)
+            self%result_3d(i,j,k) = self%result_3d(i,j,k) + self%source_data%p3d(i,j,k)
          end do
       end select
       self%n = self%n + 1
