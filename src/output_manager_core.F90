@@ -106,6 +106,7 @@ module output_manager_core
       character(len=max_path)               :: path            = ''
       character(len=max_path)               :: postfix         = ''
       character(len=string_length)          :: title           = ''
+      type (type_attributes)                :: attributes
       integer                               :: time_unit       = time_unit_none
       integer                               :: time_step       = 0
       integer                               :: first_index     = 0

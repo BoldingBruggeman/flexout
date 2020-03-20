@@ -71,7 +71,6 @@ contains
       character(len=19)                  :: time_string
       character(len=256)                 :: coordinates
       type (type_dimension), pointer     :: dim
-      class (type_attribute), pointer    :: attribute
       character(len=:), allocatable :: long_name, units, standard_name, path
       type (type_dimension_pointer), allocatable :: dimensions(:)
       real(rk) :: minimum, maximum, fill_value
@@ -104,13 +103,8 @@ contains
       if ( len(trim(self%title)) .gt. 0) then
          iret = nf90_put_att(self%ncid,NF90_GLOBAL,'title',trim(self%title)); call check_err(iret)
       end if
-#if 0
-!      iret = nf90_put_att(self%ncid,NF90_GLOBAL,'institution','add an institution'); call check_err(iret)
-!      iret = nf90_put_att(self%ncid,NF90_GLOBAL,'source','add a source'); call check_err(iret)
-!      iret = nf90_put_att(self%ncid,NF90_GLOBAL,'history','add a history'); call check_err(iret)
-!      iret = nf90_put_att(self%ncid,NF90_GLOBAL,'references','add references'); call check_err(iret)
-#endif
-      iret = nf90_put_att(self%ncid,NF90_GLOBAL,'comment','file created by the GOTM output_manager'); call check_err(iret)
+      iret = nf90_put_att(self%ncid,NF90_GLOBAL,'comment','file created by flexout - https://github.com/BoldingBruggeman/flexout'); call check_err(iret)
+      call set_attributes(NF90_GLOBAL, self%attributes)
 
       ! Create time coordinate
       dim => self%field_manager%find_dimension(id_dim_time)
@@ -153,18 +147,7 @@ contains
             if (fill_value/=default_fill_value) iret = put_att_typed_real(self%ncid,settings%varid,'_FillValue',fill_value,settings%xtype); call check_err(iret)
             if (fill_value/=default_fill_value) iret = put_att_typed_real(self%ncid,settings%varid,'missing_value',fill_value,settings%xtype); call check_err(iret)
             if (allocated(path)) iret = nf90_put_att(self%ncid,settings%varid,'path',path); call check_err(iret)
-            attribute => attributes%first
-            do while (associated(attribute))
-               select type (attribute)
-               class is (type_real_attribute)
-                  iret = nf90_put_att(self%ncid,settings%varid,trim(attribute%name),attribute%value); call check_err(iret)
-               class is (type_integer_attribute)
-                  iret = nf90_put_att(self%ncid,settings%varid,trim(attribute%name),attribute%value); call check_err(iret)
-               class is (type_string_attribute)
-                  iret = nf90_put_att(self%ncid,settings%varid,trim(attribute%name),trim(attribute%value)); call check_err(iret)
-               end select
-               attribute => attribute%next
-            end do
+            call set_attributes(settings%varid, attributes)
 
             coordinates = ''
             do i=1,size(output_field%coordinates)
@@ -193,7 +176,29 @@ contains
 
       ! Exit define mode
       iret = nf90_enddef(self%ncid); call check_err(iret)
+
    contains
+
+      subroutine set_attributes(varid, attributes)
+         integer,                intent(in) :: varid
+         type (type_attributes), intent(in) :: attributes
+
+         class (type_attribute), pointer    :: attribute
+
+         attribute => attributes%first
+         do while (associated(attribute))
+            select type (attribute)
+            class is (type_real_attribute)
+               iret = nf90_put_att(self%ncid, varid, trim(attribute%name), attribute%value); call check_err(iret)
+            class is (type_integer_attribute)
+               iret = nf90_put_att(self%ncid, varid, trim(attribute%name), attribute%value); call check_err(iret)
+            class is (type_string_attribute)
+               iret = nf90_put_att(self%ncid, varid, trim(attribute%name), trim(attribute%value)); call check_err(iret)
+            end select
+            attribute => attribute%next
+         end do
+      end subroutine
+
       integer function get_dim_id(dim)
          type (type_dimension), pointer     :: dim
          type (type_dimension_ids), pointer :: dim_id

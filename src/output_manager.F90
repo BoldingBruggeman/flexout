@@ -12,9 +12,10 @@ module output_manager
 
    implicit none
 
-   public output_manager_init, output_manager_start, output_manager_prepare_save, output_manager_save, output_manager_clean, output_manager_add_file
-
    private
+
+   public output_manager_init, output_manager_start, output_manager_prepare_save, output_manager_save, output_manager_clean, &
+      output_manager_add_file, global_attributes
 
    class (type_file), pointer :: first_file
    logical                    :: files_initialized
@@ -55,6 +56,8 @@ module output_manager
    contains
       procedure :: create => create_variable_settings
    end type
+
+   type (type_attributes) :: global_attributes
 
 contains
 
@@ -504,6 +507,7 @@ contains
          allocate(type_netcdf_file::file)
 #endif
       end select
+      call file%attributes%update(global_attributes)
 
       ! Create file object and prepend to list.
       file%path = pair%name
