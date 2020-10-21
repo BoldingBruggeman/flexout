@@ -47,15 +47,15 @@ endif()
 
 list(LENGTH NetCDF_LIBRARIES LIBCOUNT)
 if(LIBCOUNT EQUAL 1)
-get_filename_component(NetCDF_LIBRARIES_full ${NetCDF_LIBRARIES} ABSOLUTE)
-if(MSVC AND NetCDF_LIBRARIES_full STREQUAL NetCDF_LIBRARIES_default_full)
-  # Win32 NetCDF library provided with GOTM is statically built against release libraries.
-  # Dependent projects need to do the same in release mode to prevent linking conflicts.
-  set(NetCDF_STATIC_MSVC_BUILD TRUE)
+if(MSVC)
+  # Win32 NetCDF library may be statically built against release version of runtime libraries.
+  # If so, dependent projects need to do the same in release mode to prevent linking conflicts.
+  get_filename_component(NetCDF_LIBRARIES_full ${NetCDF_LIBRARIES} ABSOLUTE)
+  string(COMPARE EQUAL NetCDF_LIBRARIES_full NetCDF_LIBRARIES_default_full STAT)
+  option(NetCDF_STATIC_MSVC_BUILD "NetCDF library is statically linked to runtime libraries" ${STAT})
+  mark_as_advanced(NetCDF_STATIC_MSVC_BUILD)
 endif()
 endif()
-
-message("${NetCDF_STATIC_MSVC_BUILD}")
 
 else()
 
@@ -87,6 +87,7 @@ add_library(netcdf INTERFACE IMPORTED GLOBAL)
 set_property(TARGET netcdf APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${NetCDF_INCLUDE_DIRS}")
 set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${NetCDF_LIBRARIES}")
 if(NetCDF_STATIC_MSVC_BUILD)
+  message("Using statically built NetCDF libraries in combination with Visual Studio. Forcing all projects to link statically against runtime.")
   set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY COMPILE_OPTIONS /libs:static)
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY COMPILE_OPTIONS /libs:static)
   set_property(TARGET netcdf APPEND PROPERTY INTERFACE_LINK_LIBRARIES $<$<CONFIG:DEBUG>:-NODEFAULTLIB:libcmt>)
