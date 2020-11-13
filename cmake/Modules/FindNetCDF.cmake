@@ -51,7 +51,7 @@ if(MSVC)
   # Win32 NetCDF library may be statically built against release version of runtime libraries.
   # If so, dependent projects need to do the same in release mode to prevent linking conflicts.
   get_filename_component(NetCDF_LIBRARIES_full ${NetCDF_LIBRARIES} ABSOLUTE)
-  string(COMPARE EQUAL NetCDF_LIBRARIES_full NetCDF_LIBRARIES_default_full STAT)
+  string(COMPARE EQUAL "${NetCDF_LIBRARIES_full}" "${NetCDF_LIBRARIES_default_full}" STAT)
   option(NetCDF_STATIC_MSVC_BUILD "NetCDF library is statically linked to runtime libraries" ${STAT})
   mark_as_advanced(NetCDF_STATIC_MSVC_BUILD)
 endif()
