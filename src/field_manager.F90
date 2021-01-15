@@ -317,21 +317,25 @@ contains
       integer                    :: unit_
       integer                    :: ifield, ibin
       type (type_field), pointer :: field
+      character                  :: flag
 
       unit_ = output_unit
       if (present(unit)) unit_ = unit
 
       write(unit_,'(A)') ''
       write(unit_,'(A)') 'Fields available for output:'
+      write(unit_,'(A)') '(X indicates the variable is included in the default set of output variables)'
       write(unit_,'(A)') repeat('-', 80)
-      write(unit_,'(A4,13x,A4,13x,A9)') 'name', 'units', 'long_name'
+      write(unit_,'(2X,A4,13X,A5,12X,A9)') 'name', 'units', 'long_name'
       write(unit_,'(A)') repeat('-', 80)
       do ifield=1,self%nregistered
          do ibin=1,hash_table_size
             field => self%field_table(ibin)%first_field
             do while (associated(field))
                if (ifield == field%id) then
-                  write(unit_,'(A15,2x,A15,2x,A46)') field%name, field%units, field%long_name
+                  flag = ' '
+                  if (field%output_level <= output_level_default) flag = 'X' 
+                  write(unit_,'(A1,1X,A15,2X,A15,2X,A46)') flag, field%name, field%units, field%long_name
                   exit
                end if
                field => field%next
