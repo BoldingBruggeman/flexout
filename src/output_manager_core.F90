@@ -1,6 +1,6 @@
 module output_manager_core
 
-   use iso_fortran_env, only: error_unit
+   use iso_fortran_env, only: error_unit, output_unit
 
    use field_manager
    use yaml_settings
@@ -296,7 +296,7 @@ contains
       class (type_host), intent(in) :: self
       character(len=*),  intent(in) :: message
 
-      write (error_unit,*) trim(message)
+      write (output_unit,*) trim(message)
    end subroutine
 
    logical function is_dimension_used(self,dim)
