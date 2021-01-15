@@ -1,6 +1,6 @@
 module field_manager
 
-   use iso_fortran_env, only: error_unit
+   use iso_fortran_env, only: error_unit, output_unit
 
    implicit none
 
@@ -310,35 +310,44 @@ contains
       end if
    end subroutine initialize
 
-   subroutine list(self)
+   subroutine list(self, unit)
       class (type_field_manager), intent(in) :: self
+      integer, optional,          intent(in) :: unit
 
-      character(256)             :: line
-      integer                    :: ibin
+      integer                    :: unit_
+      integer                    :: ifield, ibin
       type (type_field), pointer :: field
 
-      write(line,'(A8,4x,A12,4x,A40)') 'name','unit',adjustl('long_name')
-      write(*,*) trim(line)
-      write(line,'(A68)') '----------------------------------------------------------------'
-      write(*,*) trim(line)
-      do ibin=1,hash_table_size
-         field => self%field_table(ibin)%first_field
-         do while (associated(field))
-            write(line,'(I2,2x,A15,2x,A15,2x,A45)') field%id,adjustl(field%name),adjustl(field%units),adjustl(field%long_name)
-            write(*,*) trim(line)
-!KB         write(*,*) field%dimensions
-            field => field%next
+      unit_ = output_unit
+      if (present(unit)) unit_ = unit
+
+      write(unit_,'(A)') ''
+      write(unit_,'(A)') 'Fields available for output:'
+      write(unit_,'(A)') repeat('-', 80)
+      write(unit_,'(A4,13x,A4,13x,A9)') 'name', 'units', 'long_name'
+      write(unit_,'(A)') repeat('-', 80)
+      do ifield=1,self%nregistered
+         do ibin=1,hash_table_size
+            field => self%field_table(ibin)%first_field
+            do while (associated(field))
+               if (ifield == field%id) then
+                  write(unit_,'(A15,2x,A15,2x,A46)') field%name, field%units, field%long_name
+                  exit
+               end if
+               field => field%next
+            end do
          end do
       end do
-      write (*,*) 'field tree:'
-      call list_node(self%root,1)
-
-      stop 'field_manager::list()'
+      write(unit_,'(A)') repeat('-', 80)
+      write(unit_,'(A)') ''
+      write (unit_,'(A)') 'Field tree:'
+      call list_node(self%root, 1, unit_)
    end subroutine list
 
-   recursive subroutine list_node(category,depth)
+   recursive subroutine list_node(category, depth, unit)
       type (type_category_node), intent(in) :: category
       integer,                   intent(in) :: depth
+      integer,                   intent(in) :: unit
 
       class (type_node), pointer :: node
 
@@ -346,10 +355,10 @@ contains
       do while (associated(node))
          select type (node)
          class is (type_category_node)
-            write (*,*) repeat('  ',depth)//trim(node%name)
-            call list_node(node,depth+1)
+            write (unit,'(A)') repeat('  ',depth) // trim(node%name)
+            call list_node(node, depth + 1, unit)
          class is (type_field_node)
-            write (*,*) repeat('  ',depth)//trim(node%field%name)
+            write (unit,'(A)') repeat('  ',depth) // trim(node%field%name)
          end select
          node => node%next_sibling
       end do
