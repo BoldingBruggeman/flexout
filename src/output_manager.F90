@@ -494,9 +494,9 @@ contains
          is_active = .false.
       end if
 #ifdef NETCDF_FMT
-      fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text'), option(2, 'NetCDF', 'netcdf')/), default=2)
+      fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text'), option(2, 'NetCDF', 'netcdf')/), default=2, display=display_advanced)
 #else
-      fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text')/), default=1)
+      fmt = file_settings%get_integer('format', 'format', options=(/option(1, 'text', 'text')/), default=1, display=display_advanced)
 #endif
 
       select case (fmt)
