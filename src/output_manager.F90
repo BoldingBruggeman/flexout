@@ -83,6 +83,7 @@ contains
          call file%finalize()
          file => file%next
       end do
+      if (allocated(used)) deallocate(used)
    end subroutine
 
    subroutine populate(file)
