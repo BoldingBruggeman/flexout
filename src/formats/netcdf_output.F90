@@ -295,10 +295,13 @@ contains
 
    subroutine finalize(self)
       class (type_netcdf_file),intent(inout) :: self
+
       integer :: iret
+
       if (self%ncid/=-1) then
          iret = nf90_close(self%ncid); call check_err(iret)
       end if
+      call self%type_file%finalize()
    end subroutine finalize
 
    subroutine check_err(iret)

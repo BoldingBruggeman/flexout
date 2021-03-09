@@ -193,6 +193,7 @@ contains
          current_file => next_file
       end do
       self%first_file => null()
+      call self%type_file%finalize()
    end subroutine finalize
 
    subroutine single_text_file_with_scalars_write_header(self)

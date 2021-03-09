@@ -91,6 +91,7 @@ module output_manager_core
       procedure :: flag_as_required => base_field_flag_as_required
       procedure :: get_metadata     => base_field_get_metadata
       procedure :: get_field        => base_field_get_field
+      procedure :: finalize         => base_field_finalize
    end type type_base_output_field
 
    type, extends(type_base_output_field) :: type_output_field
@@ -170,6 +171,10 @@ contains
       output_field => wrap_field(field, .false.)
    end function
 
+   recursive subroutine base_field_finalize(self)
+      class (type_base_output_field), intent(inout) :: self
+   end subroutine
+
    function wrap_field(field, allow_unregistered) result(output_field)
       type (type_field), target          :: field
       logical, intent(in)                :: allow_unregistered
@@ -247,7 +252,17 @@ contains
    end subroutine
 
    subroutine finalize(self)
-      class (type_file),intent(inout) :: self
+      class (type_file), intent(inout) :: self
+
+      class (type_base_output_field), pointer :: current, next
+
+      current => self%first_field
+      do while (associated(current))
+         next => current%next
+         call current%finalize()
+         deallocate(current)
+         current => next
+      end do
    end subroutine
 
    subroutine write_time_string(jul,secs,timestr)

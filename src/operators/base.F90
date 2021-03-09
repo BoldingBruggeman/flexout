@@ -28,6 +28,7 @@ module output_operators_base
       procedure :: fill
       procedure :: allocate
       procedure :: get_field
+      procedure :: finalize
    end type
 
    type, extends(type_operator_result) :: type_universal_operator_result
@@ -118,6 +119,12 @@ module output_operators_base
       class (type_base_output_field), pointer  :: output_field
       output_field => self%source%get_field(field)
    end function
+
+   recursive subroutine finalize(self)
+      class (type_operator_result), intent(inout) :: self
+      call self%source%finalize()
+      deallocate(self%source)
+   end subroutine
 
    recursive function universal_get_field(self, field) result(output_field)
       class (type_universal_operator_result), intent(in) :: self
