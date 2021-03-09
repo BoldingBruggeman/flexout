@@ -118,6 +118,7 @@ contains
                   call host%log_message('  - '//trim(member%field%name))
                   output_settings => file%create_settings()
                   call output_settings%initialize(settings, item%settings)
+                  call settings%finalize()
                   call create_field(output_settings, member%field, trim(item%prefix) // trim(member%field%name) // trim(item%postfix), .true.)
                   next_member => member%next
                   deallocate(member)
