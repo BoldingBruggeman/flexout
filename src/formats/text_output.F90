@@ -183,13 +183,16 @@ contains
    subroutine finalize(self)
       class (type_text_file),intent(inout) :: self
 
-      class (type_single_text_file), pointer :: current_file
+      class (type_single_text_file), pointer :: current_file, next_file
 
       current_file => self%first_file
       do while (associated(current_file))
+         next_file => current_file%next
          close(current_file%unit)
-         current_file => current_file%next
+         deallocate(current_file)
+         current_file => next_file
       end do
+      self%first_file => null()
    end subroutine finalize
 
    subroutine single_text_file_with_scalars_write_header(self)
