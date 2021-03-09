@@ -85,7 +85,8 @@ module field_manager
       procedure :: set_integer => attributes_set_integer
       procedure :: set_string  => attributes_set_string
       generic :: set => set_real, set_integer, set_string, set_object
-      procedure :: update  => attributes_update
+      procedure :: update      => attributes_update
+      procedure :: finalize    => attributes_finalize
    end type
 
    type type_nd_data_pointer
@@ -793,21 +794,26 @@ contains
       end do
    end subroutine attributes_update
 
+   subroutine attributes_finalize(self)
+      class (type_attributes), intent(inout) :: self
+
+      class (type_attribute),pointer :: current, next
+
+      current => self%first
+      do while (associated(current))
+         next => current%next
+         deallocate(current)
+         current => next
+      end do
+      self%first => null()
+   end subroutine attributes_finalize
+
    subroutine field_finalize(self)
       class (type_field),intent(inout) :: self
 
-      class (type_attribute),pointer :: attribute, next_attribute
-
       if (allocated(self%dimensions)) deallocate(self%dimensions)
       if (allocated(self%extents)) deallocate(self%extents)
-
-      attribute => self%attributes%first
-      do while (associated(attribute))
-         next_attribute => attribute%next
-         deallocate(attribute)
-         attribute => next_attribute
-      end do
-      self%attributes%first => null()
+      call self%attributes%finalize()
    end subroutine field_finalize
 
    subroutine add_field_to_tree(self,field,category)

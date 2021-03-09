@@ -148,6 +148,7 @@ contains
             if (fill_value/=default_fill_value) iret = put_att_typed_real(self%ncid,settings%varid,'missing_value',fill_value,settings%xtype); call check_err(iret)
             if (allocated(path)) iret = nf90_put_att(self%ncid,settings%varid,'path',path); call check_err(iret)
             call set_attributes(settings%varid, attributes)
+            call attributes%finalize()
 
             coordinates = ''
             do i=1,size(output_field%coordinates)
