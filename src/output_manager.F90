@@ -452,7 +452,10 @@ contains
          return
       end if
       call settings_%populate(populator)
-   end subroutine
+      if (file_exists) then
+         if (.not. settings_%check_all_used()) call host%fatal_error('configure_from_yaml', 'Unknown setting(s) in output.yaml.')
+      end if
+   end subroutine configure_from_yaml
 
    subroutine output_manager_add_file(field_manager, file)
       type (type_field_manager), target :: field_manager
