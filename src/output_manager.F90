@@ -77,12 +77,16 @@ contains
    end subroutine
 
    subroutine output_manager_clean()
-      class (type_file),pointer :: file
+      class (type_file), pointer :: file, next
+
       file => first_file
       do while (associated(file))
+         next => file%next
          call file%finalize()
-         file => file%next
+         deallocate(file)
+         file => next
       end do
+      first_file => null()
       if (allocated(used)) deallocate(used)
    end subroutine
 
