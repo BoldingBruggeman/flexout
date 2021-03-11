@@ -173,6 +173,7 @@ contains
 
    recursive subroutine base_field_finalize(self)
       class (type_base_output_field), intent(inout) :: self
+      if (associated(self%settings)) deallocate(self%settings)
    end subroutine
 
    function wrap_field(field, allow_unregistered) result(output_field)

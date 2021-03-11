@@ -124,6 +124,7 @@ module output_operators_base
       class (type_operator_result), intent(inout) :: self
       call self%source%finalize()
       deallocate(self%source)
+      call self%type_base_output_field%finalize()
    end subroutine
 
    recursive function universal_get_field(self, field) result(output_field)
