@@ -89,7 +89,7 @@ contains
    subroutine populate(file)
       class (type_file), intent(inout) :: file
 
-      type (type_output_item),               pointer :: item
+      type (type_output_item),               pointer :: item, next_item
       type (type_field_set)                          :: set
       class (type_field_set_member),         pointer :: member, next_member
       class (type_output_variable_settings), pointer :: output_settings
@@ -111,26 +111,48 @@ contains
          if (associated(item%category)) then
             call host%log_message('Processing output category /'//trim(item%name)//':')
             if (item%category%has_fields() .or. allow_missing_fields) then
+               ! Gather all variables in this category in a set
                call item%category%get_all_fields(set, item%output_level)
+
+               ! Loop over all variables in the set and add them to the file
                member => set%first
-               if (.not.associated(member)) call host%log_message('WARNING: output category "'//trim(item%name)//'" does not contain any variables with requested output level.')
+               if (.not. associated(member)) call host%log_message('WARNING: output category "'//trim(item%name)//'" does not contain any variables with requested output level.')
                do while (associated(member))
                   call host%log_message('  - '//trim(member%field%name))
+
+                  ! Create a separate object with variable settings, which gets initialized from the category settings.
+                  ! The initialization routine is provide with a dummy (empty) configuration node, which gets cleaned up right after.
                   output_settings => file%create_settings()
                   call output_settings%initialize(settings, item%settings)
                   call settings%finalize()
+
+                  ! Add the variable
                   call create_field(output_settings, member%field, trim(item%prefix) // trim(member%field%name) // trim(item%postfix), .true.)
+
+                  ! Move to next set member and deallocate the current member (we are cleaning up the set as we go along)
                   next_member => member%next
                   deallocate(member)
                   member => next_member
                end do
+
+               ! Set is now empty (all items have been deallocated in previous loop)
                set%first => null()
+
+               ! Deallocate the category settings (no longer needed; each contained variable has its own copy of the settings)
+               deallocate(item%settings)
             else
                call host%fatal_error('collect_from_categories','No variables have been registered under output category "'//trim(item%name)//'".')
             end if
          end if
-         item => item%next
+
+         ! Move to next item and deallocate the current item (we are cleaning up the item list as we go along)
+         next_item => item%next
+         deallocate(item)
+         item => next_item
       end do
+
+      ! Item list is now empty (all items have been deallocated in previous loop)
+      file%first_item => null()
 
       output_field => file%first_field
       do while (associated(output_field))
