@@ -23,6 +23,7 @@ module output_operators_slice
    contains
       procedure :: apply
       procedure :: add
+      procedure :: finalize
    end type
 
    contains
@@ -127,6 +128,21 @@ module output_operators_slice
          call result%data%set(result%source%data%p0d)
       end if
    end function
+
+   subroutine finalize(self)
+      class (type_slice_operator), intent(inout) :: self
+
+      type (type_single_dimension_slice), pointer :: current, next
+
+      current => self%first
+      do while (associated(current))
+         next => current%next
+         deallocate(current)
+         current => next
+      end do
+
+      call self%type_base_operator%finalize()
+   end subroutine
 
    subroutine find_local_range(global_start, global_stop, local_offset, local_length, stride, local_start, local_stop)
       integer, intent(in)  :: global_start, global_stop, stride, local_offset, local_length      

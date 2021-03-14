@@ -61,6 +61,7 @@ module output_manager_core
       class (type_base_operator), pointer :: final_operator => null()
    contains
       procedure :: initialize => output_variable_settings_initialize
+      procedure :: finalize   => output_variable_settings_finalize
    end type
 
    type type_output_item
@@ -131,11 +132,14 @@ module output_manager_core
    end type type_file
 
    type type_base_operator
+      integer                             :: refcount = 1
       class (type_base_operator), pointer :: previous => null()
    contains
-      procedure :: configure => operator_configure
-      procedure :: apply     => operator_apply
-      procedure :: apply_all => operator_apply_all
+      procedure :: configure   => operator_configure
+      procedure :: apply       => operator_apply
+      procedure :: dereference => operator_dereference
+      procedure :: finalize    => operator_finalize
+      procedure :: apply_all   => operator_apply_all
    end type
 
    class (type_host),pointer,save :: host => null()
@@ -173,7 +177,10 @@ contains
 
    recursive subroutine base_field_finalize(self)
       class (type_base_output_field), intent(inout) :: self
-      if (associated(self%settings)) deallocate(self%settings)
+      if (associated(self%settings)) then
+         call self%settings%finalize()
+         deallocate(self%settings)
+      end if
    end subroutine
 
    function wrap_field(field, allow_unregistered) result(output_field)
@@ -186,10 +193,10 @@ contains
          if (allow_unregistered) then
             call host%log_message('WARNING: output field "'//trim(field%name)//'" is skipped because it has not been registered with field manager.')
          else
-            call host%fatal_error('create_field', 'Requested output field "'//trim(field%name)//'" has not been registered with field manager.')
+            call host%fatal_error('wrap_field', 'Requested output field "'//trim(field%name)//'" has not been registered with field manager.')
          end if
       case (status_registered_no_data)
-         call host%fatal_error('create_field', 'Data for requested field "'//trim(field%name)//'" have not been provided to field manager.')
+         call host%fatal_error('wrap_field', 'Data for requested field "'//trim(field%name)//'" have not been provided to field manager.')
       case default
          allocate(output_field)
          output_field%source => field
@@ -354,18 +361,31 @@ contains
       class (type_settings),                 intent(inout)        :: settings
       class (type_output_variable_settings), intent(in), optional :: parent
 
-      integer :: display
+      integer                             :: display
+      class (type_base_operator), pointer :: op
 
       display = display_normal
       if (present(parent)) then
          self%time_method = parent%time_method
          self%final_operator => parent%final_operator
          display = display_advanced
+         op => parent%final_operator
+         do while (associated(op))
+            op%refcount = op%refcount + 1
+            op => op%previous
+         end do
       end if
 
       call settings%get(self%time_method, 'time_method', 'treatment of time dimension', options=(/option(time_method_mean, 'mean', 'mean'), &
          option(time_method_instantaneous, 'instantaneous', 'point'), option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method, display=display)
    end subroutine output_variable_settings_initialize
+
+   recursive subroutine output_variable_settings_finalize(self)
+      class (type_output_variable_settings), intent(inout) :: self
+      if (associated(self%final_operator)) then
+         if (self%final_operator%dereference()) deallocate(self%final_operator)
+      end if
+   end subroutine
 
    subroutine operator_configure(self, settings, field_manager)
       class (type_base_operator), target, intent(inout) :: self
@@ -388,5 +408,19 @@ contains
       if (associated(self%previous)) output_field => self%previous%apply_all(output_field)
       if (associated(output_field)) output_field => self%apply(output_field)
    end function
+
+   logical recursive function operator_dereference(self)
+      class (type_base_operator), intent(inout) :: self
+      self%refcount = self%refcount - 1
+      operator_dereference = self%refcount == 0
+      if (operator_dereference) call self%finalize()
+   end function
+
+   recursive subroutine operator_finalize(self)
+      class (type_base_operator), intent(inout) :: self
+      if (associated(self%previous)) then
+         if (self%previous%dereference()) deallocate(self%previous)
+      end if
+   end subroutine
 
 end module output_manager_core

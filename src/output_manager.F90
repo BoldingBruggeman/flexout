@@ -143,6 +143,7 @@ contains
                set%first => null()
 
                ! Deallocate the category settings (no longer needed; each contained variable has its own copy of the settings)
+               call item%settings%finalize()
                deallocate(item%settings)
             else
                call host%fatal_error('collect_from_categories','No variables have been registered under output category "'//trim(item%name)//'".')
@@ -194,28 +195,17 @@ contains
          character(len=*), intent(in)                  :: output_name
          logical,          intent(in)                  :: ignore_if_exists
 
-         class (type_base_operator),         pointer :: final_operator
-         class (type_base_output_field),     pointer :: output_field
-         class (type_time_average_operator), pointer :: time_filter
-         
+         class (type_base_output_field), pointer :: output_field
+
          output_field => find_field(output_name)
          if (associated(output_field)) then
             if (.not. ignore_if_exists) call host%fatal_error('create_field', 'A different output field with name "'//output_name//'" already exists.')
             return
          end if
 
-         final_operator => output_settings%final_operator
-         if (output_settings%time_method /= time_method_instantaneous .and. output_settings%time_method /= time_method_none) then
-            ! Apply time averaging/integration operator
-            allocate(time_filter)
-            time_filter%method = output_settings%time_method
-            time_filter%previous => final_operator
-            final_operator => time_filter
-         end if
-
          output_field => wrap_field(field, allow_missing_fields)
 
-         if (associated(final_operator)) output_field => final_operator%apply_all(output_field)
+         if (associated(output_settings%final_operator)) output_field => output_settings%final_operator%apply_all(output_field)
          if (associated(output_field)) call append_field(output_name, output_field, output_settings)
       end subroutine
 
@@ -444,15 +434,14 @@ contains
       character(len=*), optional, intent(in) :: postfix
       class (type_settings), pointer, optional :: settings
 
-      logical                              :: file_exists
-      integer,parameter                    :: yaml_unit = 100
-      class (type_settings),       pointer :: settings_
-      type (type_settings)                 :: ignored_settings
-      class (type_file_populator), pointer :: populator
+      logical                        :: file_exists
+      integer,parameter              :: yaml_unit = 100
+      class (type_settings), pointer :: settings_
+      type (type_settings)           :: ignored_settings
+      type (type_file_populator)     :: populator
 
       inquire(file='output.yaml',exist=file_exists)
 
-      allocate(populator)
       populator%fm => field_manager
       populator%title = trim(title)
       if (present(postfix)) populator%postfix = postfix
@@ -481,6 +470,10 @@ contains
       call settings_%populate(populator)
       if (file_exists) then
          if (.not. settings_%check_all_used()) call host%fatal_error('configure_from_yaml', 'Unknown setting(s) in output.yaml.')
+      end if
+      if (.not. present(settings)) then
+         call settings_%finalize()
+         deallocate(settings_)
       end if
    end subroutine configure_from_yaml
 
@@ -588,6 +581,8 @@ contains
       call file%configure(file_settings)
 
       call configure_group(file, file_settings, variable_settings)
+      call variable_settings%finalize()
+      deallocate(variable_settings)
    end subroutine process_file
 
    recursive subroutine configure_group(file, settings, variable_settings)
@@ -595,28 +590,24 @@ contains
       class (type_settings),     intent(inout) :: settings
       class (type_output_variable_settings), target :: variable_settings
 
-      class (type_operator_populator), pointer :: operator_populator
-      class (type_group_populator),    pointer :: group_populator
-      class (type_variable_populator), pointer :: variable_populator
+      type (type_operator_populator) :: operator_populator
+      type (type_group_populator)    :: group_populator
+      type (type_variable_populator) :: variable_populator
 
       ! Get operators
-      allocate(operator_populator)
       operator_populator%field_manager => file%field_manager
       operator_populator%variable_settings => variable_settings
       call settings%get_list('operators', operator_populator, display=display_advanced)
 
       ! Get list with groups [if any]
-      allocate(group_populator)
       group_populator%file => file
       group_populator%variable_settings => variable_settings
       call settings%get_list('groups', group_populator, display=display_advanced)
 
       ! Get list with variables
-      allocate(variable_populator)
       variable_populator%file => file
       variable_populator%variable_settings => variable_settings
       call settings%get_list('variables', variable_populator)
-
    end subroutine
 
    recursive subroutine create_group_settings(self, index, item)
@@ -637,6 +628,8 @@ contains
       ! Configure output settings
       ! This will also read additional user options from variable_settings and apply them to group_settings.
       call configure_group(self%file, group_settings, variable_settings)
+      call variable_settings%finalize()
+      deallocate(variable_settings)
    end subroutine
 
    recursive subroutine create_operator_settings(self, index, item)
@@ -655,10 +648,11 @@ contains
       integer,                         intent(in)    :: index
       type (type_list_item),           intent(inout) :: item
 
-      class (type_settings),        pointer :: variable_settings
-      character(len=:), allocatable         :: source_name
-      type (type_output_item),      pointer :: output_item
-      integer                               :: n
+      class (type_settings),              pointer :: variable_settings
+      character(len=:), allocatable               :: source_name
+      type (type_output_item),            pointer :: output_item
+      class (type_time_average_operator), pointer :: time_filter
+      integer                                     :: n
 
       variable_settings => type_settings_create(item)
 
@@ -668,6 +662,15 @@ contains
       allocate(output_item)
       output_item%settings => self%file%create_settings()
       call output_item%settings%initialize(variable_settings, self%variable_settings)
+
+      ! If this output is not instantaneous, add time averaging/integration to the operator stack
+      if (output_item%settings%time_method /= time_method_instantaneous .and. output_item%settings%time_method /= time_method_none) then
+         allocate(time_filter)
+         time_filter%method = output_item%settings%time_method
+         time_filter%previous => output_item%settings%final_operator
+         output_item%settings%final_operator => time_filter
+      end if
+
       ! Determine whether to create an output field or an output category
       n = len(source_name)
       if (source_name(n:n)=='*') then

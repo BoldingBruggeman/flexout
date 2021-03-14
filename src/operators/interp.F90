@@ -42,7 +42,7 @@ module output_operators_interp
       procedure :: get_field
    end type
 
-   type,extends(type_list_populator) :: type_coordinate_list_populator
+   type, extends(type_list_populator) :: type_coordinate_list_populator
       class (type_interp_operator), pointer :: operator => null()
    contains
       procedure :: set_length => coordinate_list_set_length
@@ -56,9 +56,9 @@ contains
       class (type_settings),                intent(inout) :: settings
       type (type_field_manager),            intent(inout) :: field_manager
 
-      type (type_dimension),      pointer :: dim
-      character(len=string_length)        :: variable_name
-      class (type_coordinate_list_populator), pointer :: populator
+      type (type_dimension), pointer        :: dim
+      character(len=string_length)          :: variable_name
+      type (type_coordinate_list_populator) :: populator
 
       call settings%get(self%dimension, 'dimension', 'dimension to interpolate')
 
@@ -83,7 +83,6 @@ contains
       variable_name = settings%get_string('source_coordinate', 'variable with source coordinates', default='')
       if (variable_name /= '') self%source_field => field_manager%select_for_output(trim(variable_name))
 
-      allocate(populator)
       populator%operator => self
       call settings%get_list('coordinates', populator)
       call settings%get(self%target_dimension_name, 'target_dimension', 'name for new interpolated dimension', default=trim(self%dimension))
