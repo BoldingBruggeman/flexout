@@ -22,6 +22,7 @@ add_library(output_manager
             output_manager_core.F90
             formats/netcdf_output.F90
             formats/text_output.F90
+            formats/memory_output.F90
             operators/library.F90
             operators/base.F90
             operators/time_average.F90
