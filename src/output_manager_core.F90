@@ -83,6 +83,7 @@ module output_manager_core
       class (type_output_variable_settings), pointer :: settings => null()
       character(len=string_length)                   :: output_name = ''
       logical                                        :: is_coordinate = .false.
+      class (type_category_node),  pointer           :: category => null()
       type (type_nd_data_pointer)                    :: data
       type (type_output_field_pointer), allocatable  :: coordinates(:)
       class (type_base_output_field),        pointer :: next => null()

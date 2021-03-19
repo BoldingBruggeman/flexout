@@ -131,7 +131,7 @@ contains
                   call settings%finalize()
 
                   ! Add the variable
-                  call create_field(output_settings, member%field, trim(item%prefix) // trim(member%field%name) // trim(item%postfix), .true.)
+                  call create_field(output_settings, member%field, trim(item%prefix) // trim(member%field%name) // trim(item%postfix), .true., item%category)
 
                   ! Move to next set member and deallocate the current member (we are cleaning up the set as we go along)
                   next_member => member%next
@@ -189,11 +189,12 @@ contains
          end do
       end function
 
-      subroutine create_field(output_settings, field, output_name, ignore_if_exists)
+      subroutine create_field(output_settings, field, output_name, ignore_if_exists, category)
          class (type_output_variable_settings), target :: output_settings
          type (type_field),                     target :: field
          character(len=*), intent(in)                  :: output_name
          logical,          intent(in)                  :: ignore_if_exists
+         class (type_category_node), optional,  target :: category
 
          class (type_base_output_field), pointer :: output_field
 
@@ -206,18 +207,20 @@ contains
          output_field => wrap_field(field, allow_missing_fields)
 
          if (associated(output_settings%final_operator)) output_field => output_settings%final_operator%apply_all(output_field)
-         if (associated(output_field)) call append_field(output_name, output_field, output_settings)
+         if (associated(output_field)) call append_field(output_name, output_field, output_settings, category)
       end subroutine
 
-      subroutine append_field(output_name, output_field, output_settings)
+      subroutine append_field(output_name, output_field, output_settings, category)
          character(len=*),               intent(in)            :: output_name
          class (type_base_output_field), intent(inout), target :: output_field
-         class (type_output_variable_settings), target         :: output_settings
+         class (type_output_variable_settings),         target :: output_settings
+         class (type_category_node), optional,          target :: category
 
          class (type_base_output_field), pointer :: last_field
 
          output_field%settings => output_settings
          output_field%output_name = trim(output_name)
+         if (present(category)) output_field%category => category
 
          if (associated(file%first_field)) then
             last_field => file%first_field

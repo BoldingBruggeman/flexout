@@ -92,7 +92,7 @@ contains
       integer,                  intent(in) :: unit
 
       class (type_base_output_field), pointer    :: output_field
-      character(len=:), allocatable              :: long_name, units
+      character(len=:), allocatable              :: long_name, units, path
       type (type_dimension_pointer), allocatable :: dimensions(:)
       integer                                    :: ntot, n, idim
       character, parameter                       :: separator = char(9)
@@ -102,6 +102,8 @@ contains
       do while (associated(output_field))
          call output_field%get_metadata(long_name=long_name, units=units, dimensions=dimensions)
          write (unit, '(a,a,a,a,a,a)', advance='NO') trim(output_field%output_name), separator, trim(long_name), separator, trim(units), separator
+         if (associated(output_field%category))  write (unit, '(a)', advance='NO') trim(output_field%category%get_path())
+         write (unit, '(a)', advance='NO') separator
          n = 1
          do idim = 1, size(dimensions)
             if (idim > 1) write (unit, '(a)', advance='NO') ','
