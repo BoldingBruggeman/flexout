@@ -152,9 +152,12 @@ contains
 
             coordinates = ''
             do i=1,size(output_field%coordinates)
-               if (associated(output_field%coordinates(i)%p)) coordinates = trim(coordinates)//' '//trim(output_field%coordinates(i)%p%output_name)
+               if (associated(output_field%coordinates(i)%p)) then
+                  if (output_field%coordinates(i)%p%output_name /= dimensions(i)%p%name) &
+                     coordinates = trim(coordinates) // ' ' // trim(output_field%coordinates(i)%p%output_name)
+               end if
             end do
-            if (coordinates/='') then
+            if (coordinates /= '') then
                iret = nf90_put_att(self%ncid,settings%varid,'coordinates',trim(coordinates(2:))); call check_err(iret)
             end if
 
