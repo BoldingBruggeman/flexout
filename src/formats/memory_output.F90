@@ -14,6 +14,7 @@ module memory_output
    contains
       procedure :: initialize
       procedure :: save
+      procedure :: restore
       procedure :: write_metadata
    end type
 
@@ -80,12 +81,47 @@ contains
          elseif (associated(output_field%data%p1d)) then
             self%data(self%offsets(ivar):self%offsets(ivar) + size(output_field%data%p1d) - 1) = output_field%data%p1d
          elseif (associated(output_field%data%p0d)) then
-            self%data(self%offsets(ivar):self%offsets(ivar)) = output_field%data%p0d
+            self%data(self%offsets(ivar)) = output_field%data%p0d
          end if
          ivar = ivar + 1
          output_field => output_field%next
       end do
    end subroutine save
+
+   subroutine restore(self)
+      class (type_memory_file), intent(inout) :: self
+
+      class (type_base_output_field), pointer :: output_field
+      integer                                 :: ivar, offset, length, j, k
+
+      ivar = 1
+      output_field => self%first_field
+      do while (associated(output_field))
+         if (associated(output_field%data%p3d)) then
+            offset = self%offsets(ivar)
+            length = size(output_field%data%p3d, 1)
+            do k = 1, size(output_field%data%p3d, 3)
+               do j = 1, size(output_field%data%p3d, 2)
+                  output_field%data%p3d(:, j, k) = self%data(offset:offset + length - 1)
+                  offset = offset + length
+               end do
+            end do
+         elseif (associated(output_field%data%p2d)) then
+            offset = self%offsets(ivar)
+            length = size(output_field%data%p2d, 1)
+            do j = 1, size(output_field%data%p2d, 2)
+               output_field%data%p2d(:, j) = self%data(offset:offset + length - 1)
+               offset = offset + length
+            end do
+         elseif (associated(output_field%data%p1d)) then
+            output_field%data%p1d(:) = self%data(self%offsets(ivar):self%offsets(ivar) + size(output_field%data%p1d) - 1)
+         elseif (associated(output_field%data%p0d)) then
+            output_field%data%p0d = self%data(self%offsets(ivar))
+         end if
+         ivar = ivar + 1
+         output_field => output_field%next
+      end do
+   end subroutine restore
 
    subroutine write_metadata(self, unit)
       class (type_memory_file), intent(in) :: self
