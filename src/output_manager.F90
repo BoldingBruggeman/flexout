@@ -270,6 +270,8 @@ contains
       integer                             :: yyyy,mm,dd,yyyy0,mm0
       integer(kind=selected_int_kind(12)) :: offset
 
+      if (self%time_unit == time_unit_none) return
+
       ! Determine time (julian day, seconds of day) for first output.
       self%next_julian = self%first_julian
       self%next_seconds = self%first_seconds
@@ -383,12 +385,15 @@ contains
             end do
 
             ! Determine whether output is required
-            if (file%time_unit /= time_unit_dt) then
-               output_required  = (julianday == file%next_julian .and. secondsofday >= file%next_seconds) .or. julianday > file%next_julian
-            else
+            select case (file%time_unit)
+            case (time_unit_none)
+               output_required = .false.
+            case (time_unit_dt)
                if (file%first_index == -1) file%first_index = n
                output_required = mod(n - file%first_index, file%time_step) == 0
-            end if
+            case default
+               output_required  = (julianday == file%next_julian .and. secondsofday >= file%next_seconds) .or. julianday > file%next_julian
+            end select
 
             if (output_required) then
                output_field => file%first_field
@@ -397,11 +402,11 @@ contains
                   output_field => output_field%next
                end do
 
-            ! Do output
-            call file%save(julianday,secondsofday,microseconds)
+               ! Do output
+               call file%save(julianday,secondsofday,microseconds)
 
-            ! Determine time (julian day, seconds of day) for next output.
-            select case (file%time_unit)
+               ! Determine time (julian day, seconds of day) for next output.
+               select case (file%time_unit)
                case (time_unit_second)
                   file%next_seconds = file%next_seconds + file%time_step
                   file%next_julian = file%next_julian + file%next_seconds/86400
@@ -422,8 +427,8 @@ contains
                   call host%calendar_date(julianday,yyyy,mm,dd)
                   yyyy = yyyy + file%time_step
                   call host%julian_day(yyyy,mm,dd,file%next_julian)
-            end select
-         end if
+               end select
+            end if
 
          end if ! in output time window
 
