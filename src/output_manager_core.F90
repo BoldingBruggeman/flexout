@@ -377,7 +377,7 @@ contains
          end do
       end if
 
-      call settings%get(self%time_method, 'time_method', 'treatment of time dimension', options=(/option(time_method_mean, 'mean', 'mean'), &
+      self%time_method = settings%get_integer('time_method', 'treatment of time dimension', options=(/option(time_method_mean, 'mean', 'mean'), &
          option(time_method_instantaneous, 'instantaneous', 'point'), option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method, display=display)
    end subroutine output_variable_settings_initialize
 
