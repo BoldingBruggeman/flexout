@@ -29,8 +29,11 @@ module field_manager
    integer, parameter, public :: id_dim_z    = 3
    integer, parameter, public :: id_dim_zi   = 4
    integer, parameter, public :: id_dim_time = 5
-   integer, parameter, public :: id_dim_unused = 20   ! First free id for user-specified dimensions
-
+   integer, parameter, public :: id_dim_unused = 22   ! First free id for user-specified dimensions !jpnote changed to 21 from 20
+   integer, parameter, public :: id_dim_zice = 20  ! jpnote: ice and snow 
+   integer, parameter, public :: id_dim_dzice = 21  ! jpnote
+  ! integer, parameter, public :: id_dim_z1 = 22  ! jpnote   not needed ?
+   
    integer, parameter, public :: status_not_registered       = 0
    integer, parameter, public :: status_registered_no_data   = 1
    integer, parameter, public :: status_registered_with_data = 2
@@ -255,6 +258,10 @@ contains
          dim%iterator = 'k'
       case (id_dim_zi)
          dim%iterator = 'k1'
+      case (id_dim_zice)
+         dim%iterator = 'l'  !jpnote
+      case (id_dim_dzice)
+         dim%iterator = 'dl'  !jpnote added 
       end select
 
       ! Basic consistency checks
