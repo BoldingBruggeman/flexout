@@ -326,7 +326,7 @@ contains
             self%xtype = parent%xtype
          end select
       end if
-      call settings%get(self%xtype, 'xtype', 'data type', options=(/option(-1, 'default', 'default'), option(NF90_FLOAT, '32-bit float', 'single'), option(NF90_DOUBLE, '64-bit double', 'double')/), default=self%xtype, display=display_advanced)
+      self%xtype = settings%get_integer('xtype', 'data type', options=(/option(-1, 'default', 'default'), option(NF90_FLOAT, '32-bit float', 'single'), option(NF90_DOUBLE, '64-bit double', 'double')/), default=self%xtype, display=display_advanced)
    end subroutine netcdf_variable_settings_initialize
 
 #endif
