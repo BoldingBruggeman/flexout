@@ -107,7 +107,7 @@ contains
       write (strindex, '(i0)') index
       real_setting => type_real_setting_create(item, 'value '//trim(strindex), '', target=self%operator%target_coordinates(index))
       if (index > 1) then
-         if (self%operator%target_coordinates(index) < self%operator%target_coordinates(index - 1)) call host%fatal_error('type_interp_operator%configure', trim(item%value%parent%path)//' should be monotonically increasing.')
+         if (self%operator%target_coordinates(index) < self%operator%target_coordinates(index - 1)) call host%fatal_error('type_interp_operator%configure', trim(item%value%parent%get_path())//' should be monotonically increasing.')
       end if
    end subroutine
 

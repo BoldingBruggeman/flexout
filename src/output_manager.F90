@@ -522,7 +522,7 @@ contains
       is_active = file_settings%get_logical('is_active', 'write output to this file', default=.true., display=display_hidden)
       is_active = file_settings%get_logical('use', 'write output to this file', default=.true., display=display_advanced)
       if (self%ignore) then
-         call host%log_message('WARNING: '//pair%value%path//' will be ignored because output.yaml is present.')
+         call host%log_message('WARNING: '//pair%value%get_path()//' will be ignored because output.yaml is present.')
          is_active = .false.
       end if
 #ifdef NETCDF_FMT
