@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 add_executable(test_flexout EXCLUDE_FROM_ALL
                test_flexout.F90

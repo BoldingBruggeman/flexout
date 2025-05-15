@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(output_manager VERSION 0.1.0 LANGUAGES Fortran)
 
