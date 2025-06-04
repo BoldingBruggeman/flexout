@@ -18,6 +18,8 @@ module output_manager_core
    integer,parameter,public :: time_method_instantaneous = 1
    integer,parameter,public :: time_method_mean          = 2
    integer,parameter,public :: time_method_integrated    = 3
+   integer,parameter,public :: time_method_minimum       = 4
+   integer,parameter,public :: time_method_maximum       = 5
 
    integer,parameter,public :: time_unit_none   = 0
    integer,parameter,public :: time_unit_second = 1
@@ -377,8 +379,13 @@ contains
          end do
       end if
 
-      self%time_method = settings%get_integer('time_method', 'treatment of time dimension', options=(/option(time_method_mean, 'mean', 'mean'), &
-         option(time_method_instantaneous, 'instantaneous', 'point'), option(time_method_integrated, 'integrated', 'integrated')/), default=self%time_method, display=display)
+      self%time_method = settings%get_integer('time_method', 'treatment of time dimension',                           &
+                                              options=(/ option(time_method_mean, 'mean', 'mean'),                    &
+                                                         option(time_method_instantaneous, 'instantaneous', 'point'), &
+                                                         option(time_method_integrated, 'integrated', 'integrated'),  &
+                                                         option(time_method_minimum, 'minimum', 'minimum'),           &
+                                                         option(time_method_maximum, 'maximum', 'maximum') /),        &
+                                              default=self%time_method, display=display)
    end subroutine output_variable_settings_initialize
 
    recursive subroutine output_variable_settings_finalize(self)
