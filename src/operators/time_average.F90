@@ -73,6 +73,39 @@ contains
       integer :: i, j, k
 
       call self%source%before_save()
+
+      select case (self%method)
+
+      case (time_method_minimum)
+
+      if (self%n == 0) call self%fill(default_maximum)
+      select case (self%rank)
+      case (0)
+         self%result_0d = min( self%result_0d , self%source_data%p0d )
+      case (1)
+         self%result_1d = min( self%result_1d , self%source_data%p1d )
+      case (2)
+         self%result_2d = min( self%result_2d , self%source_data%p2d )
+      case (3)
+         self%result_3d = min( self%result_3d , self%source_data%p3d )
+      end select
+
+      case (time_method_maximum)
+
+      if (self%n == 0) call self%fill(default_minimum)
+      select case (self%rank)
+      case (0)
+         self%result_0d = max( self%result_0d , self%source_data%p0d )
+      case (1)
+         self%result_1d = max( self%result_1d , self%source_data%p1d )
+      case (2)
+         self%result_2d = max( self%result_2d , self%source_data%p2d )
+      case (3)
+         self%result_3d = max( self%result_3d , self%source_data%p3d )
+      end select
+
+      case default
+
       if (self%n == 0) call self%fill(0.0_rk)
       select case (self%rank)
       case (0)
@@ -89,6 +122,8 @@ contains
          do concurrent (i=1:size(self%result_3d, 1), j=1:size(self%result_3d, 2), k=1:size(self%result_3d, 3))
             self%result_3d(i,j,k) = self%result_3d(i,j,k) + self%source_data%p3d(i,j,k)
          end do
+      end select
+
       end select
       self%n = self%n + 1
    end subroutine
@@ -133,6 +168,10 @@ contains
          select case (self%method)
          case (time_method_mean)
             call attributes%set('cell_methods', 'time: mean')
+         case (time_method_minimum)
+            call attributes%set('cell_methods', 'time: min')
+         case (time_method_maximum)
+            call attributes%set('cell_methods', 'time: max')
          case default
             call attributes%set('cell_methods', 'time: sum')
          end select
